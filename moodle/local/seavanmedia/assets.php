@@ -83,7 +83,7 @@ function sam_queue(int $id,array $f,string $action): void {
     if(!in_array($action,['convert','transcribe','hash','quality','preview'],true)){throw new coding_exception('Invalid job');}
     $dir=sam_asset_dir($id,$f['key']);
     if(!is_dir($dir)&&!mkdir($dir,0770,true)&&!is_dir($dir)){throw new RuntimeException('Cannot make job directory');}
-    sam_write_json($dir.'/'.$action.'.job.json',['id'=>$id,'key'=>$f['key'],'queued'=>time()]);
+    sam_write_json($dir.'/'.$action.'.job.json',['id'=>$id,'key'=>$f['key'],'fingerprint'=>$f['fingerprint']??$f['key'],'queued'=>time()]);
 }
 function sam_queue_run(string $action): void {
     global $CFG;
@@ -95,6 +95,7 @@ function sam_queue_run(string $action): void {
             if(!is_array($j)){continue;}
             try{
                 $c=get_course((int)$j['id']);$f=local_seavanmedia_get_file($c,$j['key']);
+                if(isset($j['fingerprint'])&&$j['fingerprint']!==($f['fingerprint']??$f['key'])){throw new RuntimeException('Source changed after job was queued');}
                 if(sam_asset_dir($c->id,$f['key']).'/'.$action.'.job.json'!==$p){throw new RuntimeException('Invalid job path');}
                 if($action==='convert'){sam_convert($c->id,$f);}
                 elseif($action==='quality'){sam_convert($c->id,$f,480);}
