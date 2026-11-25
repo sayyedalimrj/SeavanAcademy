@@ -1,0 +1,18 @@
+# Optional LAN TLS; requires trusted Caddy root CA on every client.
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      ACADEMY_HOST: ${ACADEMY_HOST:?Set internal DNS hostname in .env}
+    ports:
+      - "${HTTPS_BIND_IP:?Set server LAN IPv4}:443:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - web
+volumes:
+  caddydata:
+  caddyconfig:
