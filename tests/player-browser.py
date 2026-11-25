@@ -7,6 +7,8 @@ env = dict(line.strip().split("=", 1) for line in pathlib.Path(".env").read_text
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page()
+    page.on('pageerror', lambda error: print('Browser error:', error))
+    page.on('console', lambda msg: print('Browser console:', msg.text) if msg.type == 'error' else None)
     page.goto(base + "/login/index.php", wait_until="domcontentloaded")
     page.locator("#username").fill("admin")
     page.locator("#password").fill(env["ADMIN_PASSWORD"])
