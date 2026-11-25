@@ -1,35 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-# Updates the existing development containers. No volumes or accounts are deleted.
-[[ -n "${CODESPACE_NAME:-}" ]] || { echo 'This fast update is for Codespaces only.'; exit 1; }
+[[ -n "${CODESPACE_NAME:-}" ]] || { echo 'Use START.cmd for a fresh Windows installation.'; exit 1; }
 docker compose exec -T web true
-# The media library needs a new bind mount; recreate containers once if missing.
-if ! docker compose exec -T web test -d /srv/seavan-courses; then
-  echo 'Media folder mount is new; use docker compose up -d --build (preserves volumes).'
-  exit 1
-fi
-bash docker/fetch-fonts.sh moodle/theme/seavan/fonts
+mkdir -p courses backups
+# Build first, so a failed image build does not stop the current service.
+docker compose build web
 cli() { docker compose exec -T -u www-data web php "/var/www/html/admin/cli/$1" "${@:2}"; }
-# Enable maintenance before copying plugin code.
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+umask 077
+backup="backups/before-$stamp"
+mkdir -p "$backup"
 cli maintenance.php --enable
 docker compose stop cron
-for service in web cron; do
-  docker compose cp moodle/theme/seavan/. "$service:/var/www/html/theme/seavan/"
-  docker compose cp moodle/local/seavan/. "$service:/var/www/html/local/seavan/"
-  docker compose cp moodle/local/seavanmedia "$service:/var/www/html/local/"
-  docker compose cp docker/config.php "$service:/var/www/html/config.php"
-done
-docker compose exec -T web sh -c 'find /var/www/html/theme/seavan /var/www/html/local/seavan /var/www/html/local/seavanmedia -name "*.php" -exec php -l {} \;'
-cli upgrade.php --non-interactive
+docker compose exec -T db sh -c 'mariadb-dump --single-transaction --quick -uroot -p"$MARIADB_ROOT_PASSWORD" moodle' | gzip > "$backup/database.sql.gz"
+docker compose exec -T web tar -C /var/moodledata --exclude=./cache --exclude=./localcache --exclude=./temp --exclude=./sessions -czf - . > "$backup/moodledata.tar.gz"
+test -s "$backup/database.sql.gz"
+gzip -t "$backup/database.sql.gz"
+tar -tzf "$backup/moodledata.tar.gz" >/dev/null
+docker compose stop web
+# No volume removal. Recreate services with the new code and media mount.
+docker compose run --rm --no-deps init
+docker compose up -d --no-build --no-deps --force-recreate web
 cli cfg.php --name=theme --set=seavan
+cli cfg.php --name=defaulthomepage --set=/my/index.php
 cli cfg.php --name=guestloginbutton --set=0
-cli cfg.php --name=defaulthomepage --set=/local/seavan/index.php
-cli cfg.php --component=local_seavan --name=homeconfigured --set=1
-docker compose exec -T -u www-data web php /var/www/html/local/seavan/cli/setup_categories.php
 cli purge_caches.php
 cli maintenance.php --disable
-docker compose restart web
-docker compose start cron
-echo 'Updated live Moodle. Use Ctrl+F5 to refresh your browser.'
-echo 'If the update stops with an error, inspect the output before retrying. Maintenance mode remains enabled until a successful update.'
+docker compose up -d --no-build --no-deps --force-recreate cron
+docker compose ps -a
+echo "Backup saved locally: $backup"
+echo 'Academy updated. Open the forwarded port 8080 and refresh the browser.'
