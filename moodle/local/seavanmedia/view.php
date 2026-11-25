@@ -53,6 +53,8 @@ if(in_array($f['kind'],['video','audio'],true)){
         'data-course'=>$id,'data-file'=>$key,'data-sesskey'=>sesskey(),'playsinline'=>true];
     $attrs['class']='video-js vjs-big-play-centered';
     $attrs['data-kind']=$f['kind'];
+    $native=optional_param('native',0,PARAM_BOOL);
+    $attrs['data-native']=$native?'1':'0';
     $attrs['data-mime']=$f['mime'];
     $attrs['data-language-url']=(new moodle_url('/media/player/videojs/videojs/lang/fa.json'))->out(false);
     unset($attrs['src']);
@@ -84,6 +86,7 @@ if(in_array($f['kind'],['video','audio'],true)){
     echo html_writer::div('', 'sam-watched-track',['id'=>'sam-watched-track','role'=>'img','aria-label'=>'بازه‌های مشاهده‌شده فیلم']);
 
     echo html_writer::tag('label',html_writer::empty_tag('input',['type'=>'checkbox','id'=>'sam-autonext']).' رفتن خودکار به جلسه بعدی',['class'=>'sam-muted sam-autonext']);
+    echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key,'native'=>$native?0:1]),$native?'پلیر حرفه‌ای':'در صورت مشکل: پلیر ساده',['class'=>'sam-muted']);
 }elseif($f['kind']==='pdf'){
     echo html_writer::tag('iframe','',['src'=>local_seavanmedia_url($id,$key)->out(false),'class'=>'sam-pdf','title'=>s($f['title']),'loading'=>'lazy']);
 }else{echo html_writer::div('این فایل برای دانلود آماده است.','sam-muted');}
