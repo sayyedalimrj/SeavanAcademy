@@ -120,13 +120,13 @@ if ($view === 'manage') {
     echo html_writer::tag('p','برای انجام هر کار، بخش مربوط را انتخاب کنید.',['class'=>'seavan-note']);
 
     $groups = [
-        '۱. دوره‌ها و فایل‌ها'=>['ورود خودکار دوره‌ها','مدیریت آرشیو','دوره‌ها و دسته‌بندی','افزودن دوره'],
-        '۲. کارکنان و دسترسی'=>['کاربران','افزودن همکار','افزودن گروهی کاربران','گروه‌های آموزشی'],
-        '۳. آماده‌سازی رسانه'=>['سلامت کتابخانه','صف پردازش'],
-        '۴. گزارش و نگهداری'=>['خلاصه استفاده','گزارش فعالیت','سلامت سرور','ظاهر و فونت','تنظیمات سامانه'],
+        'دوره‌ها و فایل‌ها'=>['ورود خودکار دوره‌ها','مدیریت آرشیو','دوره‌ها و دسته‌بندی','افزودن دوره'],
+        'کارکنان و دسترسی'=>['کاربران','افزودن همکار','افزودن گروهی کاربران','گروه‌های آموزشی'],
+        'آماده‌سازی رسانه'=>['سلامت کتابخانه','صف پردازش'],
+        'گزارش و نگهداری'=>['خلاصه استفاده','گزارش فعالیت','سلامت سرور','ظاهر و فونت','تنظیمات سامانه'],
     ];
     echo html_writer::start_div('seavan-actions');
-    $groupicons=['folder','users','settings','settings'];
+    $groupicons=['01','02','03','04'];
     $groupindex=0;
     foreach ($groups as $heading=>$labels) {
         $icon=$groupicons[$groupindex++];
@@ -138,7 +138,7 @@ if ($view === 'manage') {
             }
         }
         if ($rows) {
-            $headinghtml=html_writer::div($OUTPUT->pix_icon('i/'.$icon,'','moodle',['class'=>'sa-group-icon']).html_writer::tag('h3',s($heading)),'sa-admin-heading');
+            $headinghtml=html_writer::div(html_writer::tag('span',$icon,['class'=>'sa-group-icon','aria-hidden'=>'true']).html_writer::tag('h3',s($heading)),'sa-admin-heading');
             echo html_writer::div($headinghtml.$rows,'sa-admin-panel');
         }
     }
