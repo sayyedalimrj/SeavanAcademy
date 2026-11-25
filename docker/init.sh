@@ -28,7 +28,7 @@ fi
 # Make the native Academy page the first destination; do not override later admin changes.
 if ! su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=local_seavan --name=homeconfigured --no-eol' >/dev/null 2>&1; then
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=guestloginbutton --set=0'
-  su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=defaulthomepage --set=/local/seavan/index.php'
+  su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=defaulthomepage --set=/my/index.php'
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=local_seavan --name=homeconfigured --set=1'
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/purge_caches.php'
 fi
