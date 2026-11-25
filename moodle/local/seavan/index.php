@@ -169,14 +169,26 @@ if ($view === 'manage') {
         ? core_course_category::top()->get_courses(['recursive'=>true])
         : array_map(fn($r)=>$r['course'],$enrolled);
     $count = 0;
+    $sessionmatches = [];
+    $normal = fn($s)=>function_exists('local_seavanmedia_normalize')?local_seavanmedia_normalize(core_text::strtolower($s)):core_text::strtolower($s);
+    $needle = $normal($query);
     echo html_writer::start_div('seavan-grid');
     foreach ($items as $item) {
         $ctx = context_course::instance($item->id);
         if (!$item->visible && !has_capability('moodle/course:viewhiddencourses',$ctx)) { continue; }
         if ($categoryid && (int)$item->category !== $categoryid) { continue; }
         $name = format_string($item->fullname,true,['context'=>$ctx]);
-        $normal = fn($s)=>function_exists('local_seavanmedia_normalize')?local_seavanmedia_normalize(core_text::strtolower($s)):core_text::strtolower($s);
-        if ($query !== '' && core_text::strpos($normal(strip_tags($name)),$normal($query)) === false) { continue; }
+        // Search session names only in courses the current user may actually access.
+        if ($view === 'catalog' && $query !== '' && count($sessionmatches)<60 &&
+                function_exists('local_seavanmedia_is_course') && local_seavanmedia_is_course($item) &&
+                (is_enrolled($ctx,null,'',true) || has_capability('moodle/course:update',$ctx))) {
+            foreach (local_seavanmedia_course_files($item) as $file) {
+                if (core_text::strpos($normal($file['title'].' '.$file['group']),$needle) === false) { continue; }
+                $sessionmatches[] = ['title'=>$file['title'],'course'=>$name,'id'=>$item->id,'key'=>$file['key'],'group'=>$file['group']];
+                if (count($sessionmatches)>=60) { break; }
+            }
+        }
+        if ($query !== '' && core_text::strpos($normal(strip_tags($name)),$needle) === false) { continue; }
         if ($view === 'home' && $count >= 6) { break; }
         $count++;
         $cat = $categories[$item->category] ?? null;
@@ -218,10 +230,21 @@ if ($view === 'manage') {
         echo html_writer::end_div();
     }
     echo html_writer::end_div();
-    if (!$count) {
-        echo html_writer::div('دوره‌ای برای نمایش وجود ندارد. ' . html_writer::link($go('catalog'),'مشاهده کتابخانه'), 'seavan-empty');
+    if (!$count && !$sessionmatches) {
+        echo html_writer::div('نتیجه‌ای پیدا نشد. ' . html_writer::link($go('catalog'),'مشاهده کتابخانه'), 'seavan-empty');
     } elseif ($view === 'home') {
         echo html_writer::div(html_writer::link($go($showcatalog?'catalog':'mine'),'مشاهده همه آموزش‌ها',['class'=>'btn btn-outline-primary']),'mt-3');
+    }
+    if ($sessionmatches) {
+        echo html_writer::tag('h2','جلسات و فایل‌های پیدا شده',['class'=>'seavan-section']);
+        echo html_writer::start_div('sa-session-results');
+        foreach ($sessionmatches as $match) {
+            echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$match['id'],'file'=>$match['key']]),
+                html_writer::tag('strong',s($match['title'])).html_writer::tag('small',$match['course'].' · '.s($match['group'])),
+                ['class'=>'sa-session-result']);
+        }
+        echo html_writer::end_div();
+        if (count($sessionmatches)>=60) { echo html_writer::tag('p','برای نتایج دقیق‌تر، عبارت جست‌وجو را کامل‌تر کنید.',['class'=>'seavan-note']); }
     }
 }
 
