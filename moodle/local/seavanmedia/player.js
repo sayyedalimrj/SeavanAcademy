@@ -11,11 +11,15 @@ function applyFilter(){
  });
 }
 filter?.addEventListener('input',applyFilter);stateFilter?.addEventListener('change',applyFilter);
+const tf=document.getElementById('sam-transcript-filter');
+tf?.addEventListener('input',()=>{const q=normalize(tf.value).trim();document.querySelectorAll('.sam-transcript-row').forEach(r=>r.hidden=!normalize(r.dataset.text||'').includes(q));});
 const original=document.getElementById('sam-player');if(!original)return;
 const config={...original.dataset};
 let started=false;
 function bindPlayback(v,player){
 if(started)return;started=true;
+const note=document.getElementById('sam-note-position');
+note?.form?.addEventListener('submit',()=>{note.value=Number.isFinite(v.currentTime)?v.currentTime:0;});
 let saving=false,last=0,dirty=false,pending=false,timer=null;
 const status=document.getElementById('sam-state'),pct=document.getElementById('sam-percent');
 const fa=n=>Number(n).toLocaleString('fa-IR');
