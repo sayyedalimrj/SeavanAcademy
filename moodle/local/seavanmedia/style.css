@@ -60,3 +60,5 @@
  .sam-playtools .btn{min-height:42px}.sam-player-wrap .vjs-control-bar{font-size:1.05em}
  .sam-extras,.sam-transcript{margin:8px 0}.sam-watched-track{height:4px}
 }
+
+.sam-timepreview{position:absolute;bottom:18px;transform:translateX(-50%);pointer-events:none;background:#101c2d;border:2px solid white;width:120px;border-radius:5px;z-index:30}.sam-timepreview img{display:block;width:100%;height:auto}.sam-timepreview[hidden]{display:none!important}.sam-quality{font-size:.8rem;margin:8px 0}.sam-quality select{width:auto;max-width:100%;font-size:.8rem}
