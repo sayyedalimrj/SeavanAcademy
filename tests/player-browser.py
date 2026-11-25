@@ -31,5 +31,11 @@ with sync_playwright() as p:
     page.locator("#sam-player").wait_for()
     page.wait_for_function("document.querySelector('#sam-player').controls && !document.querySelector('#sam-player').classList.contains('video-js')")
     assert page.locator('[data-seavan-engine="videojs"]').count() == 0
+    page.set_viewport_size({"width":390,"height":844})
+    page.goto(page.url.replace("&native=1",""), wait_until="domcontentloaded")
+    page.locator('[data-seavan-engine="videojs"]').wait_for(timeout=60000)
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"), "Mobile page overflows horizontally"
+    assert page.locator(".sam-player-wrap").bounding_box()["width"] > 300
+    assert not page.locator(".sam-extras").evaluate("(e) => e.open")
     browser.close()
 print("Video.js, actual WebM playback, captions, progress, session search and native fallback checked.")
