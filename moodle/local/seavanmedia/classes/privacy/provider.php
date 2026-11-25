@@ -7,12 +7,21 @@ use core_privacy\local\request\contextlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 defined('MOODLE_INTERNAL') || die();
-class provider implements \core_privacy\local\metadata\provider, \core_privacy\local\request\plugin\provider, \core_privacy\local\request\core_userlist_provider {
+class provider implements \core_privacy\local\metadata\provider, \core_privacy\local\request\plugin\provider, \core_privacy\local\request\core_userlist_provider, \core_privacy\local\request\user_preference_provider {
     public static function get_metadata(collection $items): collection {
         $fields=[];
         foreach(['userid','courseid','filekey','position','duration','rangesjson','percent','timemodified'] as $f){$fields[$f]='privacy:metadata:'.$f;}
         $items->add_database_table('local_seavanmedia_progress',$fields,'privacy:metadata:progress');
+        $items->add_user_preference('seavanmedia_fav_*','privacy:metadata:favorite');
+        $items->add_user_preference('seavanmedia_note_*','privacy:metadata:note');
         return $items;
+    }
+    public static function export_user_preferences(int $userid) {
+        foreach(get_user_preferences(null,null,$userid) as $key=>$value){
+            if(str_starts_with($key,'seavanmedia_fav_')||str_starts_with($key,'seavanmedia_note_')){
+                writer::export_user_preference('local_seavanmedia',$key,(string)$value,'Private learning preference');
+            }
+        }
     }
     public static function get_contexts_for_userid(int $userid): contextlist {
         $list=new contextlist();
