@@ -91,6 +91,10 @@ if ($view === 'catalog' && $query === '' && !$categoryid && !$favonly) {
     echo html_writer::tag('p','آموزش موردنیازت رو پیدا کن و با سرعت خودت یاد بگیر.');
     echo html_writer::div('', 'sa-hero-art',['aria-hidden'=>'true']);
     echo html_writer::end_div();
+}
+if ($view==='mine' && $query==='' && !$categoryid && !$favonly) {
+    echo html_writer::tag('h1','فضای یادگیری من',['class'=>'sa-page-title']);
+    echo html_writer::tag('p','دوره‌های اختصاص‌یافته، علاقه‌مندی‌ها و ادامه تماشا.',['class'=>'seavan-note']);
     if (function_exists('local_seavanmedia_is_course')) {
         $recent = $DB->get_records('local_seavanmedia_progress',['userid'=>$USER->id],'timemodified DESC','*',0,40);
         foreach ($recent as $row) {
@@ -149,7 +153,7 @@ if ($view === 'manage') {
     echo html_writer::end_tag('details');
 } else {
     $showcatalog = $view === 'catalog' || ($view === 'home' && !$enrolled);
-    $title = $showcatalog ? 'کتابخانه' : 'یادگیری من';
+    $title = $showcatalog ? 'کتابخانه' : 'دوره‌های اختصاص‌یافته';
     echo html_writer::start_div('sa-title-row');
     echo html_writer::tag('h2',$title,['class'=>'seavan-section']);
     if($view==='catalog'){echo html_writer::link(new moodle_url('/local/seavanmedia/request.php'),'درخواست آموزش',['class'=>'sa-subtle-link']);}
@@ -243,12 +247,12 @@ if ($view === 'manage') {
         }
         if ($progress !== null) {
             $percent = max(0,min(100,(int)round($progress)));
-            echo html_writer::tag('span',$digits($percent).'٪ تکمیل شده',['class'=>'seavan-course-label']);
+            echo html_writer::tag('span',$digits($percent).'٪ '.($mediaaccess?'جلسات دیده‌شده':'فعالیت‌های تکمیل‌شده'),['class'=>'seavan-course-label']);
             echo html_writer::tag('progress',$percent.'%',['value'=>$percent,'max'=>100,'class'=>'seavan-progress','aria-label'=>'تکمیل فعالیت‌ها']);
         } else {
             if (!$mediaaccess) { echo html_writer::tag('span',isset($enrolled[$item->id])?'در دسترس':'اطلاعات و عضویت',['class'=>'seavan-course-label']); }
         }
-        $label = $progress !== null && $progress >= 100 ? 'مرور آموزش' : ($mediaaccess && !empty($mediahistory) ? 'ادامه یادگیری' : (isset($enrolled[$item->id])?'ورود به آموزش':'مشاهده دوره'));
+        $label = $progress !== null && $progress >= 100 ? 'مرور آموزش' : ($mediaaccess && !empty($mediahistory) ? 'ادامه یادگیری' : ($mediaaccess || isset($enrolled[$item->id])?'ورود به آموزش':'اطلاعات و عضویت'));
         echo html_writer::link($courseurl,$label,['class'=>'btn btn-primary sa-course-open']);
         echo html_writer::end_div();
         echo html_writer::end_div();
