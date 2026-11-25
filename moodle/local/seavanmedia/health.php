@@ -10,10 +10,11 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     redirect(new moodle_url('/local/seavanmedia/health.php'), 'در صف پردازش قرار گرفت.');
 }
 $PAGE->set_context(context_system::instance());$PAGE->set_url(new moodle_url('/local/seavanmedia/health.php'));
-$PAGE->set_pagelayout(($CFG->theme??'')==='seavan'?'seavanworkspace':'standard');$PAGE->set_title('سلامت کتابخانه');$PAGE->set_heading('سلامت کتابخانه');
-echo $OUTPUT->header();echo html_writer::start_div('seavan-shell');
+$PAGE->set_pagelayout(($CFG->theme??'')==='seavan'?'seavanworkspace':'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title('سلامت کتابخانه');$PAGE->set_heading('سلامت کتابخانه');
+echo $OUTPUT->header();
+echo html_writer::div(html_writer::link(new moodle_url('/local/seavan/index.php',['view'=>'manage']),'مدیریت ← بازگشت'),'sa-admin-back');echo html_writer::start_div('seavan-shell');
 echo html_writer::tag('h1','سلامت کتابخانه',['class'=>'seavan-section']);
-echo html_writer::link(new moodle_url('/local/seavan/index.php',['view'=>'manage']),'بازگشت به مدیریت');
+
 $rows=[];$issues=[];$total=0;$pending=0;$media=[];
 foreach(local_seavanmedia_folders() as $number=>$folder){
     $c=$DB->get_record('course',['idnumber'=>$number],'id,fullname');if(!$c){continue;}
