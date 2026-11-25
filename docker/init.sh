@@ -20,7 +20,7 @@ esac
 # Apply the Academy theme and menu once; subsequent restarts preserve admin settings.
 if ! su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=local_seavan --name=brandconfigured --no-eol' >/dev/null 2>&1; then
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=theme --set=seavan'
-  su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=custommenuitems --set="آکادمی سیوان|$SITE_URL/local/seavan/index.php"'
+  su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=custommenuitems --set=""'
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=local_seavan --name=brandconfigured --set=1'
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/purge_caches.php'
 fi
