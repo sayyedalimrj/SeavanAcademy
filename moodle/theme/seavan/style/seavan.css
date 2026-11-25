@@ -30,3 +30,8 @@ body { background: #f4f7f6; color: #203831; }
 .seavan-empty { padding:1.5rem; border:1px dashed #b8cdc4; border-radius:14px; background:#fff; }
 .seavan-search { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem; }
 .seavan-search .form-control { max-width: 420px; }
+
+.seavan-course-cover {min-height:100px;background:#2f7a68;color:white;border-radius:12px;padding:1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;}
+.seavan-course:nth-child(3n+2) .seavan-course-cover {background:#405c80;}
+.seavan-course:nth-child(3n+3) .seavan-course-cover {background:#806139;}
+.seavan-course-symbol {font:42px Arial;opacity:.9;}
