@@ -84,17 +84,19 @@ jobs:
           assert token, 'No login token in Moodle'
           body = urllib.parse.urlencode({'username':'admin','password':env['ADMIN_PASSWORD'],'logintoken':html.unescape(token.group(1))}).encode()
           opener.open(base + '/login/index.php', body, timeout=90).read()
-          for view, expected in [('/my/index.php','seavan-hero'),('/my/courses.php','seavan-grid'),('/course/index.php','seavan-grid'),('/local/seavan/index.php?view=manage','seavan-actions')]:
+          for view, expected in [('/my/index.php','sa-welcome'),('/my/courses.php','seavan-grid'),('/course/index.php','seavan-grid'),('/local/seavan/index.php?view=manage','seavan-actions')]:
               page = get(view)
               assert expected in page, 'Academy route failed: ' + view
               assert page.count('class="sa-main-nav"') == 1, 'Academy must have exactly one primary menu'
               assert 'class="seavan-nav"' not in page, 'Duplicate menu rendered'
               assert 'drawer-toggles' not in page, 'Unwanted drawer controls rendered'
+              menu = re.search(r'<nav class="sa-main-nav".*?</nav>', page, re.S)
+              assert menu and menu[0].count('<a ') == 3, 'Expected only two learning destinations and management'
               assert 'seavan-login-story' not in page, 'Login failed'
           print('Authenticated Academy routes passed.')
           PY
           docker compose exec -T web sh -c 'find /var/www/html/local/seavanmedia -name "*.php" -print0 | xargs -0 -n1 php -l'
-          node --check moodle/local/seavanmedia/player.js
+          node --check moodle/local/seavanmedia/amd/build/player.min.js
           docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
           docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
           docker compose exec -T -u www-data web php /var/www/html/local/seavanmedia/cli/media.php --action=probe --limit=20
