@@ -39,7 +39,7 @@ if(in_array($f['kind'],['video','audio'],true)){
         'data-course'=>$id,'data-file'=>$key,'data-sesskey'=>sesskey(),'playsinline'=>true];
     echo html_writer::tag($f['kind'],'مرورگر شما از این نوع رسانه پشتیبانی نمی‌کند.',$attrs);
     echo html_writer::start_div('sam-tools');
-    echo html_writer::tag('label','سرعت پخش '.html_writer::select(['0.75'=>'۰٫۷۵','1'=>'۱×','1.25'=>'۱٫۲۵','1.5'=>'۱٫۵','1.75'=>'۱٫۷۵','2'=>'۲×'],'speed','1',false,['id'=>'sam-speed','class'=>'custom-select']),'');
+    echo html_writer::tag('label','سرعت پخش '.html_writer::select(['0.75'=>'۰٫۷۵','1'=>'۱×','1.25'=>'۱٫۲۵','1.5'=>'۱٫۵','1.75'=>'۱٫۷۵','2'=>'۲×'],'speed','1',false,['id'=>'sam-speed','class'=>'custom-select']),[]);
     echo html_writer::tag('button','۱۰ ثانیه عقب',['id'=>'sam-back','type'=>'button','class'=>'btn btn-outline-primary']);
     echo html_writer::tag('button','۱۰ ثانیه جلو',['id'=>'sam-forward','type'=>'button','class'=>'btn btn-outline-primary']);
     if($p&&$p->position>3){echo html_writer::tag('button','از ابتدا',['id'=>'sam-restart','type'=>'button','class'=>'btn btn-outline-secondary']);}
