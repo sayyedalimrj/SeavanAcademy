@@ -33,7 +33,7 @@ for url in (mine+"&download=1",other):
     status,headers,body=get(url,{"Range":"bytes=0-15"})
     assert status!=206 and "video/" not in headers.get("Content-Type",""), "Unauthorized media returned"
 status,headers,body=get("/local/seavanmedia/archive.php")
-assert "مدیریت آرشیو و دسترسی" not in body.decode(errors="replace"), "Learner accessed administrator page"
+assert 'class="sa-subnav"' not in body.decode(errors="replace") and 'name="media"' not in body.decode(errors="replace"), "Learner accessed administrator page"
 def segment(i):
     status,headers,data=get(mine,{"Range":f"bytes={i*16}-{i*16+15}"})
     assert status==206 and len(data)==16
