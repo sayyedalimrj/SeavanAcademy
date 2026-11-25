@@ -12,6 +12,14 @@ x-app: &app
       source: ${COURSES_DIR:-./courses}
       target: /srv/seavan-courses
       read_only: true
+    - type: bind
+      source: ${COURSES_DIR2:-./courses2}
+      target: /srv/seavan-courses2
+      read_only: true
+    - type: bind
+      source: ${COURSES_DIR3:-./courses3}
+      target: /srv/seavan-courses3
+      read_only: true
 services:
   db:
     image: mariadb:11.4
@@ -58,6 +66,8 @@ services:
         condition: service_completed_successfully
   processor:
     <<: *app
+    cpus: 1.5
+    mem_limit: 2g
     restart: unless-stopped
     user: www-data
     entrypoint: ["/bin/sh","-c","while true; do php /var/www/html/local/seavanmedia/cli/media.php --action=convertqueue; sleep 30; done"]
@@ -66,6 +76,8 @@ services:
         condition: service_completed_successfully
   whisper:
     <<: *app
+    cpus: 2.0
+    mem_limit: 3g
     image: seavan-academy-whisper:4.5.16
     build:
       context: .
