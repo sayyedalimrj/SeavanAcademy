@@ -1,0 +1,33 @@
+<?php
+define('AJAX_SCRIPT',true);
+require(__DIR__.'/../../config.php');
+require_once(__DIR__.'/lib.php');
+if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
+$id=required_param('id',PARAM_INT);
+$course=local_seavanmedia_require_course($id);
+require_sesskey();
+$key=required_param('file',PARAM_ALPHANUM);
+$file=local_seavanmedia_get_file($course,$key);
+if(!in_array($file['kind'],['video','audio'],true)){http_response_code(400);exit;}
+$duration=required_param('duration',PARAM_FLOAT);
+$pos=required_param('position',PARAM_FLOAT);
+$raw=required_param('ranges',PARAM_RAW);
+if(!is_finite($duration)||!is_finite($pos)||$duration<=0||$duration>864000||strlen($raw)>64000){http_response_code(400);exit;}
+$ranges=json_decode($raw,true);
+if(!is_array($ranges)||count($ranges)>1000){http_response_code(400);exit;}
+$lock=\core\lock\lock_config::get_lock_factory('local_seavanmedia')->get_lock($USER->id.':'.$id.':'.$key,5);
+if(!$lock){http_response_code(409);exit;}
+try{
+    $where=['userid'=>$USER->id,'courseid'=>$id,'filekey'=>$key];
+    $old=$DB->get_record('local_seavanmedia_progress',$where);
+    $previous=$old?json_decode($old->rangesjson,true):[];
+    $merged=local_seavanmedia_merge(is_array($previous)?$previous:[],$ranges,$duration);
+    $watched=array_sum(array_map(fn($r)=>$r[1]-$r[0],$merged));
+    $percent=min(100,(int)floor(100*$watched/$duration));
+    if($watched>=$duration-0.25){$percent=100;}
+    $record=(object)($where+['position'=>max(0,min($duration,$pos)),'duration'=>$duration,'rangesjson'=>json_encode($merged),'percent'=>$percent,'timemodified'=>time()]);
+    if($old){$record->id=$old->id;$DB->update_record('local_seavanmedia_progress',$record);}
+    else{$DB->insert_record('local_seavanmedia_progress',$record);}
+}finally{$lock->release();}
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode(['percent'=>$percent]);
