@@ -22,6 +22,7 @@ function local_seavanmedia_folders(): array {
             $path = $entry->getRealPath();
             if (!$path || !str_starts_with($path,$root.'/') || !is_readable($path)) { continue; }
             $rel = $prefix.$entry->getFilename();
+            if (is_file($path.'/.seavan-ignore')) { continue; }
             if (is_file($path.'/.seavan-category') && !is_link($path.'/.seavan-category')) {
                 $walk($path,$rel.'/', $depth+1);
             } else {
@@ -111,6 +112,25 @@ function local_seavanmedia_get_file($course,string $key): array {
     }
     return $file;
 }
+function local_seavanmedia_category_for_folder($basecat, string $folder) {
+    global $DB;
+    $root = realpath(local_seavanmedia_root());
+    $rel = substr($folder,strlen($root)+1);
+    $parts = explode('/',$rel);
+    array_pop($parts);
+    $parent = $basecat;
+    $prefix = '';
+    foreach ($parts as $name) {
+        $prefix .= '/'.$name;
+        $idnumber = 'seavanmedia-cat:'.hash('sha256',$prefix);
+        $cat = $DB->get_record('course_categories',['idnumber'=>$idnumber]);
+        if (!$cat) {
+            $cat = core_course_category::create((object)['name'=>core_text::substr($name,0,254),'idnumber'=>$idnumber,'parent'=>$parent->id]);
+        }
+        $parent = $cat;
+    }
+    return $parent;
+}
 function local_seavanmedia_sync(): array {
     global $CFG,$DB;
     require_once($CFG->dirroot.'/course/lib.php');
@@ -131,7 +151,8 @@ function local_seavanmedia_sync(): array {
                 $course = $DB->get_record('course',['idnumber'=>$idnumber]);
                 $created = !$course;
                 if (!$course) {
-                    $course = create_course((object)['category'=>$cat->id,'fullname'=>core_text::substr(basename($folder),0,254),
+                    $targetcat = local_seavanmedia_category_for_folder($cat,$folder);
+                    $course = create_course((object)['category'=>$targetcat->id,'fullname'=>core_text::substr(basename($folder),0,254),
                         'shortname'=>'SA-'.substr(hash('sha256',$idnumber),0,24),'idnumber'=>$idnumber,
                         'format'=>'topics','summary'=>'','summaryformat'=>FORMAT_HTML,'visible'=>1,'startdate'=>time(),
                         'enddate'=>0,'numsections'=>0,'enablecompletion'=>0]);
