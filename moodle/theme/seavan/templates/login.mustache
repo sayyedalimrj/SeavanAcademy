@@ -1,0 +1,34 @@
+{{!
+    Seavan Academy login layout, GPL v3 or later.
+    Based on theme_boost/login; retains Moodle authentication, accessibility, and footer hooks.
+}}
+{{> theme_boost/head }}
+<body {{{ bodyattributes }}}>
+{{> core/local/toast/wrapper }}
+<div id="page-wrapper">
+    {{{ output.standard_top_of_body_html }}}
+    <div id="page" class="container-fluid pt-5 mt-0">
+        <div id="page-content" class="row">
+            <div id="region-main-box" class="col-12">
+                <div id="region-main" class="col-12 h-100">
+                    <div class="login-wrapper seavan-login-wrapper">
+                        <section class="seavan-login-story" aria-label="آکادمی سیوان">
+                            <div class="seavan-login-brand"><span class="seavan-brand-mark" aria-hidden="true">S</span><span>آکادمی سیوان<small>SEAVAN ACADEMY</small></span></div>
+                            <h2>هر روز، یک قدم جلوتر.</h2>
+                            <p>آموزش‌های مورد نیازت، در یک محیط ساده و آرام. در کنار هم یاد می‌گیریم و تجربه‌هامون رو به اشتراک می‌ذاریم.</p>
+                            <div class="seavan-login-values"><span>آموزش در دسترس</span><span>یادگیری با سرعت خودت</span><span>رشد در کنار هم</span></div>
+                        </section>
+                        <div class="login-container">{{{ output.main_content }}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{> theme_boost/footer }}
+</div>
+</body>
+</html>
+{{#js}}
+M.util.js_pending('theme_boost/loader');
+require(['theme_boost/loader'], function() { M.util.js_complete('theme_boost/loader'); });
+{{/js}}
