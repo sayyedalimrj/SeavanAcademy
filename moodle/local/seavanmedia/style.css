@@ -11,8 +11,15 @@
 .sam-title{font-size:1.12rem;font-weight:700;line-height:1.85;margin:0;overflow-wrap:anywhere}
 .sam-muted{font-size:.8rem;color:#627287;line-height:1.9;margin:7px 0}
 .sam-group{margin-bottom:14px}
-.sam video{width:100%;aspect-ratio:16/9;background:#101c2d;border-radius:9px;display:block;object-fit:contain}
-.sam audio{width:100%}
+.sam-player-wrap{background:#101c2d;border-radius:9px;overflow:hidden;direction:ltr}
+.sam-player-wrap>video{width:100%;aspect-ratio:16/9;background:#101c2d;display:block;object-fit:contain}
+.sam-player-wrap .video-js{width:100%;background:#101c2d;direction:ltr;font-family:inherit}
+.sam-player-wrap .vjs-tech{object-fit:contain}
+.sam-player-wrap .vjs-big-play-button{border:0;background:#173559e6;color:#fff;border-radius:50%;width:2.5em;height:2.5em;line-height:2.5em;margin-left:-1.25em;margin-top:-1.25em}
+.sam-player-wrap .vjs-play-progress,.sam-player-wrap .vjs-volume-level{background:#fcaf17}
+.sam-player-wrap .vjs-menu{direction:rtl}
+.sam-playtools[hidden]{display:none!important}
+.sam-player-wrap>audio{width:100%}
 .sam-pdf{width:100%;height:70vh;border:1px solid #dce4ee;border-radius:8px}
 .sam-tools{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:12px 0}
 .sam-tools label{display:flex;align-items:center;gap:6px;margin:0;font-size:.8rem}
