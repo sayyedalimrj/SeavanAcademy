@@ -40,6 +40,12 @@ if ($hassiteconfig && moodle_needs_upgrading()) {
     redirect(new moodle_url('/admin/index.php'));
 }
 
+if (!isguestuser() && !optional_param('classic', false, PARAM_BOOL)) {
+    $seavanroute = 'mine';
+    require($CFG->dirroot . '/local/seavan/index.php');
+    exit;
+}
+
 $context = context_system::instance();
 
 // Get the My Moodle page info.  Should always return something unless the database is broken.
