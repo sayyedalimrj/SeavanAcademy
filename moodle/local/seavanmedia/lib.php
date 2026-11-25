@@ -4,6 +4,22 @@ defined('MOODLE_INTERNAL') || die();
 function local_seavanmedia_root(): string {
     return '/srv/seavan-courses';
 }
+function sam_roots(): array {
+    global $CFG;
+    $roots=['main'=>local_seavanmedia_root(),'disk2'=>'/srv/seavan-courses2','disk3'=>'/srv/seavan-courses3','uploads'=>$CFG->dataroot.'/seavan-uploads'];
+    return $roots;
+}
+function sam_root_for(string $folder): ?string {
+    foreach(sam_roots() as $root){
+        $real=realpath($root);
+        if($real&&str_starts_with($folder,$real.'/')){return $real;}
+    }
+    return null;
+}
+function sam_download_allowed(int $id): bool {
+    return get_config('local_seavanmedia','nodownload_'.$id)!=='1' ||
+        has_capability('moodle/course:update',context_course::instance($id));
+}
 function local_seavanmedia_idnumber(string $name): string {
     return 'seavanmedia:' . hash('sha256',$name);
 }
@@ -12,25 +28,30 @@ function local_seavanmedia_is_course($course): bool {
 }
 // Only an explicit marker makes a folder a collection instead of a course.
 function local_seavanmedia_folders(): array {
-    $root = realpath(local_seavanmedia_root());
-    if (!$root || !is_dir($root) || !is_readable($root)) { return []; }
-    $out = [];
-    $walk = function(string $dir, string $prefix = '', int $depth = 0) use (&$walk, &$out, $root) {
-        if ($depth > 12) { return; }
-        foreach (new DirectoryIterator($dir) as $entry) {
-            if ($entry->isDot() || $entry->isLink() || !$entry->isDir() || str_starts_with($entry->getFilename(),'.')) { continue; }
-            $path = $entry->getRealPath();
-            if (!$path || !str_starts_with($path,$root.'/') || !is_readable($path)) { continue; }
-            $rel = $prefix.$entry->getFilename();
-            if (is_file($path.'/.seavan-ignore')) { continue; }
-            if (is_file($path.'/.seavan-category') && !is_link($path.'/.seavan-category')) {
-                $walk($path,$rel.'/', $depth+1);
-            } else {
-                $out[local_seavanmedia_idnumber($rel)] = $path;
+    $out=[];$conflicts=[];
+    foreach(sam_roots() as $label=>$rootpath){
+        $root=realpath($rootpath);
+        if(!$root||!is_dir($root)||!is_readable($root)){continue;}
+        $walk=function(string $dir,string $prefix='',int $depth=0)use(&$walk,&$out,&$conflicts,$root,$label){
+            if($depth>12){return;}
+            foreach(new DirectoryIterator($dir) as $entry){
+                if($entry->isDot()||$entry->isLink()||!$entry->isDir()||str_starts_with($entry->getFilename(),'.')){continue;}
+                $path=$entry->getRealPath();
+                if(!$path||!str_starts_with($path,$root.'/')||!is_readable($path)||is_file($path.'/.seavan-ignore')){continue;}
+                $rel=$prefix.$entry->getFilename();
+                if(is_file($path.'/.seavan-category')&&!is_link($path.'/.seavan-category')){$walk($path,$rel.'/', $depth+1);continue;}
+                $identity=local_seavanmedia_idnumber(($label==='main'?'':$label.'/').$rel);
+                $marker=$path.'/.seavan-id';
+                if(is_file($marker)&&!is_link($marker)&&filesize($marker)<200){
+                    $value=trim(file_get_contents($marker));
+                    if(preg_match('/^seavanmedia:[a-f0-9]{64}$/D',$value)){$identity=$value;}
+                }
+                if(isset($out[$identity])||isset($conflicts[$identity])){unset($out[$identity]);$conflicts[$identity]=true;continue;}
+                $out[$identity]=$path;
             }
-        }
-    };
-    $walk($root);
+        };
+        $walk($root);
+    }
     return $out;
 }
 function local_seavanmedia_normalize(string $name): string {
@@ -41,6 +62,9 @@ function local_seavanmedia_scan(string $folder): array {
     $out = [];
     $base = realpath($folder);
     if (!$base || !is_dir($base)) { return []; }
+    $aliases=[];$manifest=$base.'/.seavan-aliases.json';
+    if(is_file($manifest)&&!is_link($manifest)&&filesize($manifest)<1048576){$aliases=json_decode(file_get_contents($manifest),true)?:[];}
+    $conflicts=[];
     $exts = ['mp4'=>'video/mp4','webm'=>'video/webm','m4v'=>'video/mp4','ogv'=>'video/ogg','mov'=>'video/quicktime',
         'mkv'=>'video/x-matroska','pdf'=>'application/pdf','mp3'=>'audio/mpeg','m4a'=>'audio/mp4',
         'zip'=>'application/zip','7z'=>'application/octet-stream','rar'=>'application/octet-stream','xlsx'=>'application/octet-stream','xls'=>'application/octet-stream','docx'=>'application/octet-stream','doc'=>'application/octet-stream','pptx'=>'application/octet-stream','ppt'=>'application/octet-stream','txt'=>'text/plain','csv'=>'text/csv','dwg'=>'application/octet-stream','dxf'=>'application/octet-stream','rvt'=>'application/octet-stream','ifc'=>'application/octet-stream','jpg'=>'image/jpeg','jpeg'=>'image/jpeg','png'=>'image/png','gif'=>'image/gif','wav'=>'audio/wav','ogg'=>'audio/ogg','flac'=>'audio/flac','avi'=>'application/octet-stream','wmv'=>'application/octet-stream','srt'=>'text/plain','vtt'=>'text/vtt'];
@@ -55,11 +79,14 @@ function local_seavanmedia_scan(string $folder): array {
         $path = $file->getRealPath();
         if (!$path || !str_starts_with($path,$base.'/')) { continue; }
         $rel = substr($path,strlen($base)+1);
-        $key = hash('sha256',$rel."\0".$file->getSize()."\0".$file->getMTime());
+        $fingerprint = hash('sha256',$rel."\0".$file->getSize()."\0".$file->getMTime());
+        $alias=$aliases[$rel]??'';
+        $key=is_string($alias)&&preg_match('/^[a-f0-9]{64}$/D',$alias)?$alias:$fingerprint;
+        if(isset($out[$key])||isset($conflicts[$key])){unset($out[$key]);$conflicts[$key]=true;continue;}
         $group = dirname($rel) === '.' ? 'جلسات دوره' : dirname($rel);
         $title = pathinfo($file->getFilename(),PATHINFO_FILENAME);
         $kind = in_array($ext,['mp4','webm','m4v','ogv','mov','mkv','avi','wmv'],true) ? 'video' : ($ext === 'pdf' ? 'pdf' : (in_array($ext,['mp3','m4a','wav','ogg','flac'],true) ? 'audio' : 'download'));
-        $out[$key] = ['key'=>$key,'path'=>$path,'name'=>$file->getFilename(),'group'=>$group,'title'=>$title,
+        $out[$key] = ['key'=>$key,'fingerprint'=>$fingerprint,'path'=>$path,'name'=>$file->getFilename(),'group'=>$group,'title'=>$title,
             'mime'=>$exts[$ext],'kind'=>$kind,'size'=>$file->getSize(),'rel'=>$rel];
     }
     // Numeric prefixes define the chapter order; PDF-only groups follow video groups.
@@ -101,20 +128,21 @@ function local_seavanmedia_get_file($course,string $key): array {
     $file = $files[$key];
     // Cached inventory is not authorization. Recheck the actual path and fingerprint.
     clearstatcache(true,$file['path']);
-    $root = realpath(local_seavanmedia_root());
     $folder = local_seavanmedia_folders()[$course->idnumber] ?? '';
+    $root = sam_root_for($folder);
     $path = realpath($file['path']);
     if (!$root || !$folder || !$path || !str_starts_with($folder,$root.'/') ||
         !str_starts_with($path,$folder.'/') || $path !== $file['path'] ||
         !is_file($path) || !is_readable($path) || is_link($file['path']) ||
-        hash('sha256',$file['rel']."\0".filesize($path)."\0".filemtime($path)) !== $key) {
+        hash('sha256',$file['rel']."\0".filesize($path)."\0".filemtime($path)) !== ($file['fingerprint']??$key)) {
         throw new moodle_exception('mediaunavailable','local_seavanmedia');
     }
     return $file;
 }
 function local_seavanmedia_category_for_folder($basecat, string $folder) {
     global $DB;
-    $root = realpath(local_seavanmedia_root());
+    $root = sam_root_for($folder);
+    if(!$root){return $basecat;}
     $rel = substr($folder,strlen($root)+1);
     $parts = explode('/',$rel);
     array_pop($parts);
@@ -185,6 +213,7 @@ function local_seavanmedia_sync(): array {
                         'externalurl'=>(new moodle_url('/local/seavanmedia/view.php',['id'=>$course->id]))->out(false),
                         'display'=>RESOURCELIB_DISPLAY_OPEN,'groupmode'=>0,'completion'=>0],$course);
                 }
+                if($created){set_config('lastnewcourse',time(),'local_seavanmedia');}
                 $result[] = ($created?'ایجاد: ':'به‌روز: ').$course->fullname.' — '.count($files).' فایل';
             } catch (\Throwable $e) {
                 $result[] = 'خطا در '.basename($folder).': '.$e->getMessage();
