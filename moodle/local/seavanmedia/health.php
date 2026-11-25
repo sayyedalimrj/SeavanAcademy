@@ -35,7 +35,7 @@ foreach($issues as [$c,$f,$state]){
     $dir=sam_asset_dir($c->id,$f['key']);
     echo html_writer::div(html_writer::tag('strong',s($f['name'])).html_writer::tag('p',s($c->fullname).' — '.($state==='error'?'خطای خواندن':'کدک یا ظرف ناسازگار')).($state==='convert'?$OUTPUT->single_button(new moodle_url('/local/seavanmedia/health.php',['id'=>$c->id,'file'=>$f['key'],'job'=>'convert','sesskey'=>sesskey()]),is_file($dir.'/convert.job.json')?'در صف (ثبت مجدد)':'ساخت نسخه سازگار','post'):''),'card p-3 mb-2');
 }}
-echo html_writer::start_tag('details',['class'=>'sa-advanced']);
+echo html_writer::start_tag('details',['class'=>'sa-advanced']+(optional_param('q','',PARAM_TEXT)!==''?['open'=>'open']:[]));
 echo html_writer::tag('summary','تبدیل گفتار به متن (Whisper)');
 echo html_writer::tag('p','برای پردازش، سرویس اختیاری Whisper را راه‌اندازی کنید. فقط فایل انتخابی پردازش می‌شود.');
 $q=trim(optional_param('q','',PARAM_TEXT));
