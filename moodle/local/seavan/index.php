@@ -132,7 +132,8 @@ if ($view === 'manage') {
         if (!$item->visible && !has_capability('moodle/course:viewhiddencourses',$ctx)) { continue; }
         if ($categoryid && (int)$item->category !== $categoryid) { continue; }
         $name = format_string($item->fullname,true,['context'=>$ctx]);
-        if ($query !== '' && core_text::strpos(core_text::strtolower(strip_tags($name)),core_text::strtolower($query)) === false) { continue; }
+        $normal = fn($s)=>function_exists('local_seavanmedia_normalize')?local_seavanmedia_normalize(core_text::strtolower($s)):core_text::strtolower($s);
+        if ($query !== '' && core_text::strpos($normal(strip_tags($name)),$normal($query)) === false) { continue; }
         if ($view === 'home' && $count >= 6) { break; }
         $count++;
         $cat = $categories[$item->category] ?? null;
@@ -168,7 +169,7 @@ if ($view === 'manage') {
         } else {
             echo html_writer::tag('span',isset($enrolled[$item->id])?'آموزش آزاد، بدون درصد اجباری':'مشاهده اطلاعات و روش عضویت',['class'=>'seavan-course-label']);
         }
-        $label = $progress !== null && $progress >= 100 ? 'مرور آموزش' : (isset($enrolled[$item->id])?'ادامه آموزش':'مشاهده دوره');
+        $label = $progress !== null && $progress >= 100 ? 'مرور آموزش' : ($mediaaccess && !empty($mediahistory) ? 'ادامه یادگیری' : (isset($enrolled[$item->id])?'ورود به آموزش':'مشاهده دوره'));
         echo html_writer::link(new moodle_url($mediaaccess?'/local/seavanmedia/view.php':'/course/view.php',['id'=>$item->id]),$label,['class'=>'btn btn-primary']);
         if (has_capability('moodle/course:enrolreview',$ctx)) {
             echo html_writer::link(new moodle_url('/user/index.php',['id'=>$item->id]),'مدیریت شرکت‌کنندگان',['class'=>'seavan-secondary']);
