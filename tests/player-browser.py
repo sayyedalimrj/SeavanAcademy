@@ -57,8 +57,9 @@ with sync_playwright() as p:
     result.wait_for(timeout=60000)
     result.click()
     page.locator('.sam-player-wrap').wait_for()
-    page.screenshot(path=str(shots / '04-player.png'), full_page=True)
+    page.screenshot(path=str(shots / '04-player-before-init.png'), full_page=True)
     page.locator('[data-seavan-engine="videojs"]').wait_for(timeout=60000)
+    page.screenshot(path=str(shots / '04-player.png'), full_page=True)
     media = page.locator(".sam-player-wrap video")
     page.wait_for_function("document.querySelector('.sam-player-wrap video').readyState >= 1", timeout=60000)
     assert media.evaluate("(v) => v.duration") > 5
@@ -75,8 +76,8 @@ with sync_playwright() as p:
     assert page.locator('[data-seavan-engine="videojs"]').count() == 0
     page.set_viewport_size({"width":390,"height":844})
     page.goto(page.url.replace("&native=1",""), wait_until="domcontentloaded")
-    page.screenshot(path=str(shots / "05-mobile.png"), full_page=True)
     page.locator('[data-seavan-engine="videojs"]').wait_for(timeout=60000)
+    page.screenshot(path=str(shots / "05-mobile.png"), full_page=True)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"), "Mobile page overflows horizontally"
     assert page.locator(".sam-player-wrap").bounding_box()["width"] > 300
     assert not page.locator(".sam-extras").evaluate("(e) => e.open")
