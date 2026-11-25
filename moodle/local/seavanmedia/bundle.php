@@ -1,6 +1,7 @@
 <?php
 require(__DIR__.'/../../config.php');require_once(__DIR__.'/lib.php');require_once($CFG->libdir.'/filelib.php');
 $id=required_param('id',PARAM_INT);$course=local_seavanmedia_require_course($id);require_sesskey();
+if(!sam_download_allowed($id)){throw new moodle_exception('mediaunavailable','local_seavanmedia');}
 $group=optional_param('chapter','',PARAM_RAW);
 $files=array_filter(local_seavanmedia_course_files($course),fn($f)=>$group===''||$f['group']===$group);
 if(!$files){throw new moodle_exception('mediaunavailable','local_seavanmedia');}
