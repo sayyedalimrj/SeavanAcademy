@@ -8,7 +8,17 @@ $history=local_seavanmedia_progress($id);
 $key=optional_param('file','',PARAM_ALPHANUM);
 if($key!==''&&!isset($files[$key])){throw new moodle_exception('mediaunavailable','local_seavanmedia');}
 if(!$key){
-    foreach($history as $k=>$row){if(isset($files[$k])&&$row->percent<95){$key=$k;break;}}
+    // Resume the latest unfinished item. If it was completed, choose the next unfinished item.
+    foreach($history as $k=>$row){
+        if(!isset($files[$k])){continue;}
+        if($row->percent<95){$key=$k;break;}
+        $after=false;
+        foreach($files as $nextkey=>$next){
+            if($nextkey===$k){$after=true;continue;}
+            if($after&&in_array($next['kind'],['video','audio'],true)&&($history[$nextkey]->percent??0)<95){$key=$nextkey;break;}
+        }
+        break;
+    }
     if(!$key){foreach($files as $k=>$f){if(in_array($f['kind'],['video','audio'],true)&&(!isset($history[$k])||$history[$k]->percent<95)){$key=$k;break;}}}
     if(!$key&&$files){$key=array_key_first($files);}
 }
@@ -35,7 +45,7 @@ echo html_writer::tag('h2',s($f['title']),['class'=>'sam-title']);
 echo html_writer::tag('p',s($f['group']),['class'=>'sam-muted']);
 if(in_array($f['kind'],['video','audio'],true)){
     $attrs=['id'=>'sam-player','src'=>local_seavanmedia_url($id,$key)->out(false),'controls'=>true,'preload'=>'metadata',
-        'data-position'=>(string)($p->position??0),'data-endpoint'=>(new moodle_url('/local/seavanmedia/progress.php'))->out(false),
+        'data-position'=>(string)(($p && $p->percent<95)?$p->position:0),'data-ranges'=>$p->rangesjson??'[]','data-endpoint'=>(new moodle_url('/local/seavanmedia/progress.php'))->out(false),
         'data-course'=>$id,'data-file'=>$key,'data-sesskey'=>sesskey(),'playsinline'=>true];
     echo html_writer::tag($f['kind'],'مرورگر شما از این نوع رسانه پشتیبانی نمی‌کند.',$attrs);
     echo html_writer::start_div('sam-tools');
@@ -45,13 +55,15 @@ if(in_array($f['kind'],['video','audio'],true)){
     if($p&&$p->position>3){echo html_writer::tag('button','از ابتدا',['id'=>'sam-restart','type'=>'button','class'=>'btn btn-outline-secondary']);}
     echo html_writer::end_div();
     echo html_writer::div('بخش‌های مشاهده‌شده: '.html_writer::tag('strong',$digits($p->percent??0).'٪',['id'=>'sam-percent']).' — '.html_writer::tag('span','ذخیره خودکار',['id'=>'sam-state','role'=>'status']),'sam-muted');
-    echo html_writer::div('درصد بر اساس بازه‌های پخش گزارش‌شده توسط مرورگر است؛ جلو زدن آزاد است.','sam-muted');
+    echo html_writer::div('', 'sam-watched-track',['id'=>'sam-watched-track','role'=>'img','aria-label'=>'بازه‌های مشاهده‌شده فیلم']);
+    echo html_writer::div('نوار بالا بخش‌های پخش‌شده را نشان می‌دهد. جلو زدن آزاد است.','sam-muted');
+    echo html_writer::tag('label',html_writer::empty_tag('input',['type'=>'checkbox','id'=>'sam-autonext']).' پخش خودکار جلسه بعدی',['class'=>'sam-muted']);
 }elseif($f['kind']==='pdf'){
     echo html_writer::tag('iframe','',['src'=>local_seavanmedia_url($id,$key)->out(false),'class'=>'sam-pdf','title'=>s($f['title']),'loading'=>'lazy']);
 }else{echo html_writer::div('این فایل برای دانلود آماده است.','sam-muted');}
 echo html_writer::start_div('sam-tools');
 echo html_writer::link(local_seavanmedia_url($id,$key,true),'دانلود فایل · '.round($f['size']/1048576,1).' MB',['class'=>'btn btn-primary']);
-$keys=array_keys($files);$idx=array_search($key,$keys,true);
+$keys=in_array($f['kind'],['video','audio'],true)?array_keys($videos):array_keys($files);$idx=array_search($key,$keys,true);
 if($idx>0){echo html_writer::link($goto($keys[$idx-1]),'جلسه قبلی',['class'=>'btn btn-outline-primary']);}
 if($idx<count($keys)-1){echo html_writer::link($goto($keys[$idx+1]),'جلسه بعدی',['class'=>'btn btn-outline-primary','id'=>'sam-next']);}
 echo html_writer::end_div();
@@ -61,6 +73,7 @@ echo html_writer::tag('h3','جلسات و فایل‌ها');
 echo html_writer::tag('p',$digits($done).' از '.$digits(count($videos)).' جلسه مشاهده‌شده (۹۵٪ یا بیشتر)',['class'=>'sam-muted']);
 echo html_writer::tag('progress','',['value'=>$done,'max'=>max(1,count($videos)),'class'=>'sam-bar']);
 echo html_writer::empty_tag('input',['id'=>'sam-filter','type'=>'search','class'=>'form-control','placeholder'=>'جست‌وجو در جلسات...','aria-label'=>'جست‌وجوی جلسات']);
+echo html_writer::select(['all'=>'همه فایل‌ها','unseen'=>'جلسات مشاهده‌نشده','started'=>'جلسات در حال مشاهده','done'=>'جلسات مشاهده‌شده','docs'=>'جزوه و پیوست'],'lessonstate','all',false,['id'=>'sam-lessonstate','class'=>'custom-select mt-2','aria-label'=>'فیلتر وضعیت جلسات']);
 $groups=[];foreach($files as $item){$groups[$item['group']][]=$item;}
 foreach($groups as $name=>$items){
     $active=in_array($key,array_column($items,'key'),true);
@@ -70,7 +83,7 @@ foreach($groups as $name=>$items){
         $r=$history[$item['key']]??null;
         $state=$item['kind']==='pdf'?'PDF':($r?($r->percent>=95?'✓':$digits($r->percent).'٪'):'▷');
         $label=html_writer::tag('span',s($item['title'])).html_writer::tag('small',$state);
-        echo html_writer::link($goto($item['key']),$label,['class'=>'sam-lesson'.($key===$item['key']?' active':''),'data-title'=>$item['title'],'aria-current'=>$key===$item['key']?'page':'false']);
+        echo html_writer::link($goto($item['key']),$label,['class'=>'sam-lesson'.($key===$item['key']?' active':''),'data-title'=>$item['title'].' '.$item['group'],'data-state'=>!in_array($item['kind'],['video','audio'],true)?'docs':(($r->percent??0)>=95?'done':(($r->percent??0)>0?'started':'unseen')),'aria-current'=>$key===$item['key']?'page':'false']);
     }
     echo html_writer::end_tag('details');
 }
