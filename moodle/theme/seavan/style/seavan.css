@@ -1,0 +1,32 @@
+/* Seavan Academy: calm, readable, RTL-friendly. */
+body, input, select, textarea, button, .btn, .form-control {
+  font-family: SeavanIRANSans, IRANSansWeb, IRANSans, Tahoma, Arial, sans-serif;
+}
+body { background: #f4f7f6; color: #203831; }
+.navbar.fixed-top { background: #fff; border-bottom: 1px solid #dce7e3; box-shadow: none; }
+.navbar-brand { font-weight: 700; color: #176b60 !important; }
+#page.drawers .main-inner { background: transparent; }
+.card, .dashboard-card, .login-container { border: 1px solid #dce7e3; border-radius: 16px; box-shadow: none; }
+.btn-primary { background: #176b60; border-color: #176b60; }
+.btn-primary:hover, .btn-primary:focus { background: #11554c; border-color: #11554c; }
+.pagelayout-login #page { background: linear-gradient(135deg,#e5f3ec,#f8fbf9); }
+.pagelayout-login .login-container { max-width: 460px; padding: 2rem; }
+.seavan-shell { max-width: 1180px; margin: auto; padding: 1rem 0 2rem; }
+.seavan-hero { background: #174e45; color: #fff; border-radius: 22px; padding: clamp(1.5rem,4vw,3rem); margin-bottom: 1.5rem; }
+.seavan-hero h2 { font-size: clamp(1.4rem,3vw,2rem); font-weight: 700; color: #fff; }
+.seavan-hero p { color: #e0f2ea; max-width: 45rem; margin-bottom: 1.2rem; }
+.seavan-hero .btn { background: #fff; color: #174e45; border-color: #fff; }
+.seavan-section { margin: 2rem 0 1rem; font-size: 1.3rem; font-weight: 700; }
+.seavan-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 1rem; }
+.seavan-course { padding: 1.2rem; background: white; border: 1px solid #dce7e3; border-radius: 16px; display:flex; flex-direction:column; gap:.75rem; min-width:0; }
+.seavan-course h3 { font-size: 1.05rem; font-weight:700; overflow-wrap:anywhere; margin:0; }
+.seavan-course .btn { align-self:flex-start; margin-top:auto; }
+.seavan-course-label { font-size: .82rem; color:#466a60; }
+.seavan-progress { width:100%; height:8px; accent-color:#176b60; }
+.seavan-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:.75rem; }
+.seavan-action { display:block; text-decoration:none; border:1px solid #dce7e3; background:white; border-radius:14px; padding:1rem; color:#174e45; font-weight:700; }
+.seavan-action:hover { background:#e8f4ee; color:#174e45; }
+.seavan-action small { display:block; color:#506760; font-weight:400; margin-top:.4rem; }
+.seavan-empty { padding:1.5rem; border:1px dashed #b8cdc4; border-radius:14px; background:#fff; }
+.seavan-search { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem; }
+.seavan-search .form-control { max-width: 420px; }
