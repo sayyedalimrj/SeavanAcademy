@@ -1,8 +1,15 @@
 FROM php:8.3-apache-bookworm
-RUN apt-get update && apt-get install -y --no-install-recommends curl unzip libicu-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libxml2-dev libonig-dev libldap2-dev libcurl4-openssl-dev libwebp-dev && \
- docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp && \
- docker-php-ext-install -j2 gd intl zip mysqli pdo_mysql soap exif opcache mbstring curl dom simplexml xml xmlreader xmlwriter && \
- a2enmod rewrite headers && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+ apt-get update; \
+ apt-get install -y --no-install-recommends curl unzip libicu-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libxml2-dev libonig-dev libwebp-dev; \
+ if ! php -r 'exit(extension_loaded("gd") ? 0 : 1);'; then docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; fi; \
+ for ext in gd intl zip mysqli pdo_mysql soap exif mbstring; do \
+   if ! php -r 'exit(extension_loaded($argv[1]) ? 0 : 1);' "$ext"; then docker-php-ext-install -j2 "$ext"; fi; \
+ done; \
+ if ! php -r 'exit(extension_loaded("Zend OPcache") ? 0 : 1);'; then docker-php-ext-install -j2 opcache; fi; \
+ php -r 'foreach (["curl","dom","SimpleXML","xml","xmlreader","xmlwriter","gd","intl","zip","mysqli","mbstring","sodium","Zend OPcache"] as $ext) { if (!extension_loaded($ext)) { fwrite(STDERR, "Missing PHP extension: $ext\n"); exit(1); }}'; \
+ a2enmod rewrite headers; \
+ rm -rf /var/lib/apt/lists/*
 WORKDIR /var/www/html
 # Source is imported in GitHub or downloaded from the official fixed release.
 COPY . /tmp/seavan-build
