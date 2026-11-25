@@ -56,6 +56,27 @@ services:
     depends_on:
       init:
         condition: service_completed_successfully
+  processor:
+    <<: *app
+    restart: unless-stopped
+    user: www-data
+    entrypoint: ["/bin/sh","-c","while true; do php /var/www/html/local/seavanmedia/cli/media.php --action=convertqueue; sleep 30; done"]
+    depends_on:
+      init:
+        condition: service_completed_successfully
+  whisper:
+    <<: *app
+    image: seavan-academy-whisper:4.5.16
+    build:
+      context: .
+      target: whisper
+    profiles: ["whisper"]
+    restart: unless-stopped
+    user: www-data
+    entrypoint: ["/bin/sh","-c","while true; do php /var/www/html/local/seavanmedia/cli/media.php --action=transcribequeue; sleep 60; done"]
+    depends_on:
+      init:
+        condition: service_completed_successfully
 volumes:
   moodledata:
   dbdata:
