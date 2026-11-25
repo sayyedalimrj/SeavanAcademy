@@ -44,6 +44,9 @@ if(!$files){echo html_writer::div('فایل‌های این دوره هنوز د
 $f=$files[$key];$p=$history[$key]??null;$meta=sam_metadata($id,$key);
 $note=json_decode(get_user_preferences('seavanmedia_note_'.$id.'_'.$key,'{}'),true)?:[];
 $converted=is_file(sam_asset_dir($id,$key).'/converted.mp4');
+$low=is_file(sam_asset_dir($id,$key).'/480.mp4');
+$quality=optional_param('quality','default',PARAM_ALPHA);
+$useLow=$low&&$quality==='low';
 \local_seavanmedia\event\media_accessed::create(['context'=>$ctx,'other'=>['filekey'=>$key,'action'=>'open']])->trigger();
 echo html_writer::start_div('sam-layout');
 echo html_writer::start_div('sam-main');
@@ -61,7 +64,13 @@ if(in_array($f['kind'],['video','audio'],true)){
     $attrs['data-language-url']=(new moodle_url('/media/player/videojs/videojs/lang/fa.json'))->out(false);
     unset($attrs['src']);
     if($f['kind']==='video'&&is_file(sam_asset_dir($id,$key).'/cover.jpg')){$attrs['poster']=sam_asset_url($id,$key,'cover')->out(false);}
-    $sources=html_writer::empty_tag('source',['src'=>($converted?sam_asset_url($id,$key,'converted'):local_seavanmedia_url($id,$key))->out(false),'type'=>$converted?'video/mp4':$f['mime']]);
+    $previewfile=sam_asset_dir($id,$key).'/previews.json';
+    if(is_readable($previewfile)){
+        $preview=json_decode(file_get_contents($previewfile),true);
+        $attrs['data-preview-url']=sam_asset_url($id,$key,'preview')->out(false);
+        $attrs['data-preview-step']=$preview['step']??0;$attrs['data-preview-count']=$preview['count']??0;
+    }
+    $sources=html_writer::empty_tag('source',['src'=>($useLow?sam_asset_url($id,$key,'low'):($converted?sam_asset_url($id,$key,'converted'):local_seavanmedia_url($id,$key)))->out(false),'type'=>($useLow||$converted)?'video/mp4':$f['mime']]);
     // Match WebVTT sidecars by exact stem and optional language suffix.
     $stem=pathinfo($f['name'],PATHINFO_FILENAME);
     foreach($files as $subtitle){
@@ -79,6 +88,7 @@ if(in_array($f['kind'],['video','audio'],true)){
         $sources.=html_writer::empty_tag('track',['src'=>$trackurl->out(false),'kind'=>'subtitles','srclang'=>$lang,'label'=>$label]);
     }
     echo html_writer::div(html_writer::tag($f['kind'],$sources.'مرورگر شما از این نوع رسانه پشتیبانی نمی‌کند.',$attrs),'sam-player-wrap');
+    if($low){echo html_writer::div(html_writer::tag('label','کیفیت '.html_writer::select(['default'=>'کیفیت اصلی / سازگار','low'=>'کم‌حجم (تا ۴۸۰p)'],'quality',$useLow?'low':'default',false,['id'=>'sam-quality','class'=>'custom-select']),[]),'sam-quality');}
     echo html_writer::start_div('sam-tools sam-playtools',['id'=>'sam-native-controls']);
     echo html_writer::tag('label','سرعت '.html_writer::select(['0.75'=>'۰٫۷۵','1'=>'۱×','1.25'=>'۱٫۲۵','1.5'=>'۱٫۵','1.75'=>'۱٫۷۵','2'=>'۲×'],'speed','1',false,['id'=>'sam-speed','class'=>'custom-select']),[]);
     echo html_writer::tag('button','۱۰ ثانیه عقب',['id'=>'sam-back','type'=>'button','class'=>'btn btn-outline-primary']);
