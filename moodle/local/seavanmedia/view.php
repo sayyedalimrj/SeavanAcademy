@@ -25,7 +25,7 @@ if(!$key){
 $ctx=context_course::instance($id);
 $PAGE->set_context($ctx);$PAGE->set_course($course);
 $PAGE->set_url(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key]));
-$PAGE->set_pagelayout('standard');$PAGE->set_title(format_string($course->fullname));$PAGE->set_heading(format_string($course->fullname));
+$PAGE->set_pagelayout('seavanworkspace');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title(format_string($course->fullname));$PAGE->set_heading(format_string($course->fullname));
 $PAGE->requires->css('/local/seavanmedia/style.css');
 $PAGE->requires->js('/local/seavanmedia/player.js');
 $goto=fn($k)=>new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$k]);
@@ -35,7 +35,7 @@ $videos=array_filter($files,fn($f)=>in_array($f['kind'],['video','audio'],true))
 $done=count(array_filter($videos,fn($f)=>($history[$f['key']]->percent??0)>=95));
 echo $OUTPUT->header();
 echo html_writer::start_div('sam');
-echo html_writer::div(html_writer::link(new moodle_url('/local/seavan/index.php',['view'=>'catalog']),'بازگشت به کتابخانه',['class'=>'btn btn-outline-primary']).' '.html_writer::link(new moodle_url('/course/view.php',['id'=>$id]),'صفحه اصلی دوره',['class'=>'btn btn-outline-secondary']),'sam-top');
+echo html_writer::div(html_writer::link(new moodle_url('/course/index.php'),'بازگشت به کتابخانه',['class'=>'btn btn-outline-primary']).' '.html_writer::link(new moodle_url('/course/view.php',['id'=>$id,'classic'=>1]),'امکانات کامل دوره',['class'=>'btn btn-outline-secondary']),'sam-top');
 if(!$files){echo html_writer::div('فایل‌های این دوره هنوز در مسیر سرور در دسترس نیستند.','alert alert-info');echo html_writer::end_div();echo $OUTPUT->footer();exit;}
 $f=$files[$key];$p=$history[$key]??null;
 \local_seavanmedia\event\media_accessed::create(['context'=>$ctx,'other'=>['filekey'=>$key,'action'=>'open']])->trigger();
