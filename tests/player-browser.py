@@ -3,6 +3,8 @@ import pathlib
 from playwright.sync_api import sync_playwright
 
 base = "http://127.0.0.1:8080"
+shots = pathlib.Path("ui-screenshots")
+shots.mkdir(exist_ok=True)
 env = dict(line.strip().split("=", 1) for line in pathlib.Path(".env").read_text().splitlines() if "=" in line)
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
@@ -10,14 +12,26 @@ with sync_playwright() as p:
     page.on('pageerror', lambda error: print('Browser error:', error))
     page.on('console', lambda msg: print('Browser console:', msg.text) if msg.type == 'error' else None)
     page.goto(base + "/login/index.php", wait_until="domcontentloaded")
+    page.screenshot(path=str(shots / "01-login.png"), full_page=True)
     page.locator("#username").fill("admin")
     page.locator("#password").fill(env["ADMIN_PASSWORD"])
     page.locator("#loginbtn").click()
     page.wait_for_url(lambda url: "/login/index.php" not in url, timeout=60000)
+    page.goto(base + "/course/index.php", wait_until="networkidle")
+    page.locator(".seavan-course").first.wait_for()
+    assert page.locator(".sa-main-nav").count() == 1
+    assert page.locator(".sa-main-nav a").count() == 3
+    assert page.locator(".seavan-grid").evaluate("(e) => getComputedStyle(e).display") == "grid"
+    page.screenshot(path=str(shots / "02-library.png"), full_page=True)
+    page.goto(base + "/local/seavan/index.php?view=manage", wait_until="networkidle")
+    assert page.locator(".sa-admin-panel").count() == 4
+    page.screenshot(path=str(shots / "03-management.png"), full_page=True)
     page.goto(base + "/course/index.php?q=02+-+Browser", wait_until="domcontentloaded")
     result = page.locator(".sa-session-result").filter(has_text="02 - Browser").first
     result.wait_for(timeout=60000)
     result.click()
+    page.locator('.sam-player-wrap').wait_for()
+    page.screenshot(path=str(shots / '04-player.png'), full_page=True)
     page.locator('[data-seavan-engine="videojs"]').wait_for(timeout=60000)
     media = page.locator(".sam-player-wrap video")
     page.wait_for_function("document.querySelector('.sam-player-wrap video').readyState >= 1", timeout=60000)
@@ -35,6 +49,7 @@ with sync_playwright() as p:
     assert page.locator('[data-seavan-engine="videojs"]').count() == 0
     page.set_viewport_size({"width":390,"height":844})
     page.goto(page.url.replace("&native=1",""), wait_until="domcontentloaded")
+    page.screenshot(path=str(shots / "05-mobile.png"), full_page=True)
     page.locator('[data-seavan-engine="videojs"]').wait_for(timeout=60000)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"), "Mobile page overflows horizontally"
     assert page.locator(".sam-player-wrap").bounding_box()["width"] > 300
