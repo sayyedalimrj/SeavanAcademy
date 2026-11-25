@@ -25,7 +25,7 @@ $add = function($capability, $label, $detail, $path, $params = []) use (&$action
 };
 $add('moodle/user:create', 'افزودن همکار', 'ساخت حساب کاربری جدید', '/user/editadvanced.php', ['id'=>-1]);
 $add('moodle/user:update', 'کاربران', 'جست‌وجو و ویرایش حساب‌ها', '/admin/user.php');
-$add('moodle/site:uploadusers', 'افزودن گروهی کاربران', 'ورود فهرست CSV کارکنان', '/admin/tool/uploaduser/index.php');
+$add('moodle/site:uploadusers', 'افزودن گروهی کاربران', 'ورود فهرست Excel یا CSV کارکنان', '/local/seavanmedia/employees.php');
 $add('moodle/category:manage', 'دوره‌ها و دسته‌بندی', 'ساخت دوره، ویرایش و مرتب‌سازی', '/course/management.php');
 $defaultcategory = core_course_category::get_default();
 if ($defaultcategory && has_capability('moodle/course:create', context_coursecat::instance($defaultcategory->id))) {
@@ -34,6 +34,9 @@ if ($defaultcategory && has_capability('moodle/course:create', context_coursecat
 $add('moodle/cohort:manage', 'گروه‌های آموزشی', 'مدیریت گروه‌های همکاران', '/cohort/index.php');
 $add('report/log:view', 'گزارش فعالیت', 'گزارش‌های استاندارد مودل', '/report/log/index.php', ['id'=>SITEID]);
 if (function_exists('local_seavanmedia_sync')) { $add('moodle/site:config','ورود خودکار دوره‌ها','شناسایی پوشه‌ها و ساخت دوره','/local/seavanmedia/sync.php'); }
+$add('moodle/site:config','مدیریت آرشیو','هاردها، بارگذاری و مجوز دانلود','/local/seavanmedia/archive.php');
+$add('moodle/site:config','صف پردازش','کارهای رسانه‌ای در انتظار و انجام‌شده','/local/seavanmedia/queue.php');
+$add('moodle/site:config','سلامت سرور','دیسک‌ها، دیتابیس و اجرای وظایف','/local/seavanmedia/server.php');
 $add('moodle/site:config','سلامت کتابخانه','کدک، مدت، کاور و پردازش فایل‌ها','/local/seavanmedia/health.php');
 $add('report/log:view','خلاصه استفاده','گزارش ساده دوره‌ها','/local/seavanmedia/report.php');
 $add('moodle/site:config', 'ظاهر و فونت', 'بارگذاری ایران‌سنس دارای مجوز', '/admin/settings.php', ['section'=>'themesettingseavan']);
@@ -112,9 +115,9 @@ if ($view === 'manage') {
     echo html_writer::tag('p','کاربران، دوره‌ها و فایل‌های آموزشی در یک جا.',['class'=>'seavan-note']);
 
     $groups = [
-        'محتوای آموزشی'=>['ورود خودکار دوره‌ها','افزودن دوره','دوره‌ها و دسته‌بندی','سلامت کتابخانه'],
+        'محتوای آموزشی'=>['ورود خودکار دوره‌ها','افزودن دوره','دوره‌ها و دسته‌بندی','مدیریت آرشیو','سلامت کتابخانه','صف پردازش'],
         'کاربران و دسترسی'=>['افزودن همکار','کاربران','افزودن گروهی کاربران','گروه‌های آموزشی'],
-        'گزارش و تنظیمات'=>['خلاصه استفاده','گزارش فعالیت','ظاهر و فونت','تنظیمات سامانه'],
+        'گزارش و تنظیمات'=>['خلاصه استفاده','گزارش فعالیت','ظاهر و فونت','سلامت سرور','تنظیمات سامانه'],
     ];
     echo html_writer::start_div('seavan-actions');
     foreach ($groups as $heading=>$labels) {
@@ -160,6 +163,7 @@ if ($view === 'manage') {
     $showcatalog = $view === 'catalog' || ($view === 'home' && !$enrolled);
     $title = $showcatalog ? 'کتابخانه آموزش‌ها' : ($view === 'home' ? 'آموزش‌های شما' : 'دوره‌های من');
     echo html_writer::tag('h2',$title,['class'=>'seavan-section']);
+    if($view==='catalog'){echo html_writer::link(new moodle_url('/local/seavanmedia/request.php'),'درخواست آموزش جدید',['class'=>'btn btn-outline-primary mb-3']);}
     echo html_writer::start_tag('form',['method'=>'get','action'=>$url->out(false),'class'=>'seavan-search']);
     echo html_writer::empty_tag('input',['type'=>'hidden','name'=>'view','value'=>$view]);
     echo html_writer::empty_tag('input',['type'=>'search','name'=>'q','value'=>$query,'placeholder'=>$view==='catalog'?'جست‌وجوی دوره، جلسه یا فایل':'جست‌وجوی دوره','aria-label'=>'جست‌وجوی آموزش','class'=>'form-control']);
@@ -227,6 +231,7 @@ if ($view === 'manage') {
         echo html_writer::div($cover,'seavan-course-cover');
         echo html_writer::tag('span',$catname,['class'=>'seavan-course-label']);
         echo html_writer::tag('h3',$name);
+        if((int)$item->timecreated>time()-14*DAYSECS){echo html_writer::tag('span','جدید',['class'=>'seavan-course-label']);}
         $mediahistory = [];
         $media = function_exists('local_seavanmedia_is_course') && local_seavanmedia_is_course($item);
         $mediaaccess = $media && (is_enrolled($ctx,null,'',true) || has_capability('moodle/course:update',$ctx));
