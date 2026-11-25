@@ -188,8 +188,15 @@ if ($view === 'manage') {
                 function_exists('local_seavanmedia_is_course') && local_seavanmedia_is_course($item) &&
                 (is_enrolled($ctx,null,'',true) || has_capability('moodle/course:update',$ctx))) {
             foreach (local_seavanmedia_course_files($item) as $file) {
-                if (core_text::strpos($normal($file['title'].' '.$file['group']),$needle) === false) { continue; }
-                $sessionmatches[] = ['title'=>$file['title'],'course'=>$name,'id'=>$item->id,'key'=>$file['key'],'group'=>$file['group']];
+                $match = core_text::strpos($normal($file['title'].' '.$file['group']),$needle) !== false;
+                $segmentmatch=null;
+                if(!$match && core_text::strlen($query)>=3){
+                    foreach(sam_transcript($item->id,$file['key']) as $seg){
+                        if(core_text::strpos($normal($seg['text']),$needle)!==false){$segmentmatch=$seg;break;}
+                    }
+                }
+                if(!$match&&!$segmentmatch){continue;}
+                $sessionmatches[] = ['title'=>$file['title'],'course'=>$name,'id'=>$item->id,'key'=>$file['key'],'group'=>$file['group'],'segment'=>$segmentmatch];
                 if (count($sessionmatches)>=60) { break; }
             }
         }
@@ -254,8 +261,8 @@ if ($view === 'manage') {
         echo html_writer::tag('h2','جلسات و فایل‌های پیدا شده',['class'=>'seavan-section']);
         echo html_writer::start_div('sa-session-results');
         foreach ($sessionmatches as $match) {
-            echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$match['id'],'file'=>$match['key']]),
-                html_writer::tag('strong',s($match['title'])).html_writer::tag('small',$match['course'].' · '.s($match['group'])),
+            echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$match['id'],'file'=>$match['key']]+($match['segment']?['at'=>$match['segment']['start']]:[])),
+                html_writer::tag('strong',s($match['title'])).html_writer::tag('small',$match['course'].' · '.s($match['group'])).($match['segment']?html_writer::tag('small','متن فیلم: '.s(core_text::substr($match['segment']['text'],0,180))):''),
                 ['class'=>'sa-session-result']);
         }
         echo html_writer::end_div();
