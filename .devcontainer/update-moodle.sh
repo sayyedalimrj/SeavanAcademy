@@ -12,7 +12,7 @@ umask 077
 backup="backups/before-$stamp"
 mkdir -p "$backup"
 cli maintenance.php --enable
-docker compose stop cron
+docker compose --profile whisper stop cron processor whisper
 docker compose exec -T db sh -c 'mariadb-dump --single-transaction --quick -uroot -p"$MARIADB_ROOT_PASSWORD" moodle' | gzip > "$backup/database.sql.gz"
 docker compose exec -T web tar -C /var/moodledata --exclude=./cache --exclude=./localcache --exclude=./temp --exclude=./sessions -czf - . > "$backup/moodledata.tar.gz"
 test -s "$backup/database.sql.gz"
@@ -27,7 +27,7 @@ cli cfg.php --name=defaulthomepage --set=/my/index.php
 cli cfg.php --name=guestloginbutton --set=0
 cli purge_caches.php
 cli maintenance.php --disable
-docker compose up -d --no-build --no-deps --force-recreate cron
+docker compose up -d --no-build --no-deps --force-recreate cron processor
 docker compose ps -a
 echo "Backup saved locally: $backup"
 echo 'Academy updated. Open the forwarded port 8080 and refresh the browser.'
