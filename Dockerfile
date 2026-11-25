@@ -1,7 +1,7 @@
-FROM php:8.3-apache-bookworm
+FROM php:8.3-apache-bookworm AS academy
 RUN set -eux; \
  apt-get update; \
- apt-get install -y --no-install-recommends curl unzip libicu-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libxml2-dev libonig-dev libwebp-dev; \
+ apt-get install -y --no-install-recommends curl unzip ffmpeg libicu-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libxml2-dev libonig-dev libwebp-dev; \
  if ! php -r 'exit(extension_loaded("gd") ? 0 : 1);'; then docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; fi; \
  for ext in gd intl zip mysqli pdo_mysql soap exif mbstring; do \
    if ! php -r 'exit(extension_loaded($argv[1]) ? 0 : 1);' "$ext"; then docker-php-ext-install -j2 "$ext"; fi; \
@@ -28,3 +28,10 @@ RUN set -eux; \
  cp /tmp/seavan-build/docker/php.ini /usr/local/etc/php/conf.d/seavan.ini; \
  chown -R root:root /var/www/html; chown -R www-data:www-data /var/moodledata; \
  rm -rf /tmp/fa.zip /tmp/seavan-build
+
+# Optional CPU transcription worker, not included in the normal web image.
+FROM academy AS whisper
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv && python3 -m venv /opt/seavan-whisper && /opt/seavan-whisper/bin/pip install --no-cache-dir faster-whisper==1.1.1 && rm -rf /var/lib/apt/lists/*
+COPY docker/transcribe.py /opt/seavan-tools/transcribe.py
+ENV HF_HOME=/var/moodledata/seavan-whisper-model
+FROM academy AS runtime
