@@ -18,7 +18,11 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     redirect(new moodle_url('/course/index.php'),'درخواست به مدیر ارسال شد.');
 }
 $PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_pagelayout(($CFG->theme??'')==='seavan'?'seavanworkspace':'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title('درخواست آموزش');$PAGE->set_heading('درخواست آموزش');
-echo $OUTPUT->header();echo html_writer::tag('h2','چه آموزشی نیاز دارید؟');
+echo $OUTPUT->header();
+echo html_writer::div(html_writer::link(new moodle_url('/course/index.php'),'بازگشت به آموزش‌ها'),'sa-admin-back');
+echo html_writer::tag('h1','درخواست آموزش',['class'=>'sa-page-title']);
+echo html_writer::start_div('sa-form-panel');
+echo html_writer::tag('p','موضوع آموزش موردنیاز را بنویسید تا برای بررسی به مدیر ارسال شود.');
 echo html_writer::start_tag('form',['method'=>'post','action'=>$url->out(false)]);
 echo html_writer::empty_tag('input',['type'=>'hidden','name'=>'sesskey','value'=>sesskey()]);
 echo html_writer::tag('label','نام آموزش',['for'=>'sam-request-title']);
@@ -26,4 +30,4 @@ echo html_writer::empty_tag('input',['name'=>'title','id'=>'sam-request-title','
 echo html_writer::tag('label','توضیحات (اختیاری)',['for'=>'sam-request-body']);
 echo html_writer::tag('textarea','',['name'=>'body','id'=>'sam-request-body','rows'=>4,'maxlength'=>1000,'class'=>'form-control']);
 echo html_writer::tag('button','ارسال درخواست',['type'=>'submit','class'=>'btn btn-primary mt-3']);
-echo html_writer::end_tag('form');echo $OUTPUT->footer();
+echo html_writer::end_tag('form');echo html_writer::end_div();echo $OUTPUT->footer();
