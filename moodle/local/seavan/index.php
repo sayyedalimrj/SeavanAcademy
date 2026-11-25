@@ -40,7 +40,7 @@ if (!$actions && $view === 'manage') {
 if (!in_array($view, ['home','mine','catalog','manage'], true)) { $view = 'home'; }
 $PAGE->set_context($context);
 $PAGE->set_url($url, ['view'=>$view,'q'=>$query,'category'=>$categoryid]);
-$PAGE->set_pagelayout('seavanworkspace');
+$PAGE->set_pagelayout($PAGE->theme->name === 'seavan' ? 'seavanworkspace' : 'mydashboard');
 $PAGE->add_body_class('seavan-workspace');
 $PAGE->set_title('آکادمی سیوان');
 $PAGE->set_heading('آکادمی سیوان');
