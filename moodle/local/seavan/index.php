@@ -3,6 +3,8 @@
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/enrollib.php');
 require_once($CFG->libdir . '/completionlib.php');
+$medialib = $CFG->dirroot . '/local/seavanmedia/lib.php';
+if (is_readable($medialib)) { require_once($medialib); }
 require_once($CFG->dirroot . '/course/lib.php');
 require_login(null, false);
 if (isguestuser()) {
@@ -29,6 +31,7 @@ if ($defaultcategory && has_capability('moodle/course:create', context_coursecat
 }
 $add('moodle/cohort:manage', 'گروه‌های آموزشی', 'مدیریت گروه‌های همکاران', '/cohort/index.php');
 $add('report/log:view', 'گزارش فعالیت', 'گزارش‌های استاندارد مودل', '/report/log/index.php', ['id'=>SITEID]);
+if (function_exists('local_seavanmedia_sync')) { $add('moodle/site:config','ورود خودکار دوره‌ها','شناسایی پوشه‌ها و ساخت دوره','/local/seavanmedia/sync.php'); }
 $add('moodle/site:config', 'ظاهر و فونت', 'بارگذاری ایران‌سنس دارای مجوز', '/admin/settings.php', ['section'=>'themesettingseavan']);
 $add('moodle/site:config', 'تنظیمات سامانه', 'پشتیبان‌گیری، افزونه‌ها و سایر تنظیمات', '/admin/search.php');
 if (!$actions && $view === 'manage') {
@@ -77,11 +80,12 @@ if ($view === 'home') {
     echo html_writer::end_div();
     $completed = count(array_filter($enrolled, fn($row)=>$row['progress'] !== null && $row['progress'] >= 100));
     $ongoing = count(array_filter($enrolled, fn($row)=>$row['progress'] !== null && $row['progress'] > 0 && $row['progress'] < 100));
-    echo html_writer::start_div('seavan-stats');
+    // Keep the learning home focused on courses rather than administrative counters.
+    if (false) { echo html_writer::start_div('seavan-stats');
     foreach ([[count($enrolled),'دوره‌های من'],[$ongoing,'در حال یادگیری'],[$completed,'تکمیل‌شده']] as [$n,$label]) {
         echo html_writer::div(html_writer::tag('strong',$digits($n)) . html_writer::tag('span',$label), 'seavan-stat');
     }
-    echo html_writer::end_div();
+    echo html_writer::end_div(); }
 }
 if ($view === 'manage') {
     echo html_writer::tag('h2','مدیریت آموزش',['class'=>'seavan-section']);
@@ -155,16 +159,25 @@ if ($view === 'manage') {
         echo html_writer::div($cover,'seavan-course-cover');
         echo html_writer::tag('span',$catname,['class'=>'seavan-course-label']);
         echo html_writer::tag('h3',$name);
+        $media = function_exists('local_seavanmedia_is_course') && local_seavanmedia_is_course($item);
+        $mediaaccess = $media && (is_enrolled($ctx,null,'',true) || has_capability('moodle/course:update',$ctx));
         $progress = $enrolled[$item->id]['progress'] ?? null;
+        if ($mediaaccess) {
+            $mediafiles = array_filter(local_seavanmedia_course_files($item),fn($f)=>in_array($f['kind'],['video','audio'],true));
+            $mediahistory = local_seavanmedia_progress($item->id);
+            $completed = count(array_filter($mediafiles,fn($f)=>($mediahistory[$f['key']]->percent ?? 0)>=95));
+            $progress = count($mediafiles) ? 100*$completed/count($mediafiles) : null;
+            echo html_writer::tag('span',$digits($completed).' از '.$digits(count($mediafiles)).' جلسه مشاهده‌شده',['class'=>'seavan-course-label']);
+        }
         if ($progress !== null) {
             $percent = max(0,min(100,(int)round($progress)));
-            echo html_writer::tag('span',$digits($percent).'٪ تکمیل فعالیت‌ها',['class'=>'seavan-course-label']);
+            echo html_writer::tag('span',$digits($percent).($mediaaccess?'٪ جلسات مشاهده‌شده':'٪ تکمیل فعالیت‌ها'),['class'=>'seavan-course-label']);
             echo html_writer::tag('progress',$percent.'%',['value'=>$percent,'max'=>100,'class'=>'seavan-progress','aria-label'=>'تکمیل فعالیت‌ها']);
         } else {
             echo html_writer::tag('span',isset($enrolled[$item->id])?'آموزش آزاد، بدون درصد اجباری':'مشاهده اطلاعات و روش عضویت',['class'=>'seavan-course-label']);
         }
         $label = $progress !== null && $progress >= 100 ? 'مرور آموزش' : (isset($enrolled[$item->id])?'ادامه آموزش':'مشاهده دوره');
-        echo html_writer::link(new moodle_url('/course/view.php',['id'=>$item->id]),$label,['class'=>'btn btn-primary']);
+        echo html_writer::link(new moodle_url($mediaaccess?'/local/seavanmedia/view.php':'/course/view.php',['id'=>$item->id]),$label,['class'=>'btn btn-primary']);
         if (has_capability('moodle/course:enrolreview',$ctx)) {
             echo html_writer::link(new moodle_url('/user/index.php',['id'=>$item->id]),'مدیریت شرکت‌کنندگان',['class'=>'seavan-secondary']);
         }
