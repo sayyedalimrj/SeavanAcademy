@@ -20,7 +20,7 @@ with sync_playwright() as p:
     media = page.locator(".sam-player-wrap video")
     page.wait_for_function("document.querySelector('.sam-player-wrap video').readyState >= 1", timeout=60000)
     assert media.evaluate("(v) => v.duration") > 5
-    assert media.evaluate("(v) => v.textTracks.length") >= 1
+    assert page.evaluate("""() => new Promise((resolve, reject) => require(['media_videojs/video-lazy'], mod => { const api = typeof mod === 'function' ? mod : mod.default; resolve(api.getPlayer('sam-player').textTracks().length); }, reject))""") >= 1
     media.evaluate("(v) => {v.muted=true; return v.play();}")
     page.wait_for_function("document.querySelector('.sam-player-wrap video').currentTime > 2", timeout=15000)
     with page.expect_response(lambda r: "/local/seavanmedia/progress.php" in r.url and r.request.method == "POST", timeout=15000) as saved:
