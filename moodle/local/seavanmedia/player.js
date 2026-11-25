@@ -73,6 +73,7 @@ function fallback(){
  original.controls=true;
  bindPlayback(original,null);
 }
+if(config.native==='1'){fallback();return;}
 const timerId=setTimeout(fallback,6000);
 if(typeof window.require!=='function'){clearTimeout(timerId);fallback();return;}
 window.require(['media_videojs/video-lazy'],async function(module){
