@@ -15,3 +15,6 @@ $string['eventmediaaccessed'] = 'Media opened or downloaded';
 
 $string['privacy:metadata:favorite']='User favorite courses';
 $string['privacy:metadata:note']='Personal lesson note and bookmark';
+
+$string['messageprovider:courserequest']='Course request';
+$string['messageprovider:courseassigned']='New assigned course';
