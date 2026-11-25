@@ -29,6 +29,7 @@ jobs:
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add -f moodle/
             git commit -m 'Vendor official Moodle 4.5.16 source (GPL)'
+            git pull --rebase origin main
             git push origin HEAD:main
           fi
       - name: Build and initialize test site
@@ -39,7 +40,8 @@ jobs:
           docker compose up -d --build
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8080/login/index.php -o /tmp/login.html; then
-              grep -q 'lang="fa"' /tmp/login.html
+              grep -Eq 'lang="fa(-[A-Za-z]+)?"' /tmp/login.html
+              grep -q 'dir="rtl"' /tmp/login.html
               exit 0
             fi
             sleep 5
