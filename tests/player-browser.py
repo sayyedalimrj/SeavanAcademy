@@ -26,6 +26,24 @@ with sync_playwright() as p:
     page.goto(base + "/local/seavan/index.php?view=manage", wait_until="networkidle")
     assert page.locator(".sa-admin-panel").count() == 4
     page.screenshot(path=str(shots / "03-management.png"), full_page=True)
+    for name, path, selector in [
+        ("learning", "/my/courses.php", ".seavan-shell"),
+        ("archive", "/local/seavanmedia/archive.php", ".sa-subnav"),
+        ("upload", "/local/seavanmedia/archive.php?section=upload", "form[enctype='multipart/form-data']"),
+        ("versions", "/local/seavanmedia/archive.php?section=versions", "select[name='course']"),
+        ("duplicates", "/local/seavanmedia/archive.php?section=duplicates", ".sa-subnav"),
+        ("queue", "/local/seavanmedia/queue.php", ".sa-metrics"),
+        ("health", "/local/seavanmedia/health.php", ".sa-metrics"),
+        ("server", "/local/seavanmedia/server.php", ".sa-info"),
+        ("employees", "/local/seavanmedia/employees.php", ".sa-form-panel"),
+        ("request", "/local/seavanmedia/request.php", ".sa-form-panel"),
+        ("report", "/local/seavanmedia/report.php", ".seavan-shell"),
+        ("sync", "/local/seavanmedia/sync.php", ".seavan-shell"),
+    ]:
+        page.goto(base + path, wait_until="domcontentloaded")
+        page.locator(selector).first.wait_for(timeout=30000)
+        assert page.locator(".sa-main-nav").count() == 1, name
+        page.screenshot(path=str(shots / (name + ".png")), full_page=True)
     page.goto(base + "/course/index.php?q=02+-+Browser", wait_until="domcontentloaded")
     result = page.locator(".sa-session-result").filter(has_text="02 - Browser").first
     result.wait_for(timeout=60000)
