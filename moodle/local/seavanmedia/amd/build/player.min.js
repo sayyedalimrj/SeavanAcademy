@@ -76,14 +76,17 @@ function fallback(){
  if(started)return;
  original.classList.remove('video-js','vjs-big-play-centered');
  original.controls=true;
+ original.dataset.seavanEngine='native';
  bindPlayback(original,null);
 }
 if(config.native==='1'){fallback();return;}
 const timerId=setTimeout(fallback,20000);
-require(['media_videojs/video-lazy'],async function(module){
+require(['media_videojs/video-lazy'],function(module){
+ // RequireJS expects a regular Function callback, not an AsyncFunction.
+ void (async function(){
  if(started)return;
  const videojs=typeof module==='function'?module:module?.default;
- if(typeof videojs!=='function'){clearTimeout(timerId);fallback();return;}
+ if(typeof videojs!=='function'){console.error('Seavan: Video.js module export missing');clearTimeout(timerId);fallback();return;}
  try{
   const res=await fetch(config.languageUrl,{credentials:'same-origin'});
   if(res.ok)videojs.addLanguage('fa',await res.json());
@@ -91,6 +94,7 @@ require(['media_videojs/video-lazy'],async function(module){
  if(started)return;
  clearTimeout(timerId);
  try{
+  original.classList.add('video-js','vjs-big-play-centered');
   const player=videojs(original,{
    language:'fa',controls:true,autoplay:false,preload:'metadata',fluid:config.kind==='video',
    responsive:true,aspectRatio:config.kind==='video'?'16:9':undefined,
@@ -120,10 +124,12 @@ require(['media_videojs/video-lazy'],async function(module){
    }
   });
  }catch(e){
+  console.error('Seavan: Video.js initialization failed',e);
   // If initialization has already moved the media, a reload with the native player is offered.
   if(original.isConnected){fallback();}else{document.getElementById('sam-state').textContent='پلیر آماده نشد؛ صفحه را تازه‌سازی یا فایل را دانلود کنید.';}
  }
-},function(){clearTimeout(timerId);fallback();});
+ })();
+},function(error){console.error('Seavan: Video.js loading failed',error);clearTimeout(timerId);fallback();});
 }
 return {init:boot};
 });
