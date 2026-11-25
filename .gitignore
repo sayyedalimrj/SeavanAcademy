@@ -10,3 +10,6 @@
 *.mkv
 *.webm
 *.log
+
+# Locally licensed fonts must never enter the public repository.
+/moodle/theme/seavan/fonts/*
