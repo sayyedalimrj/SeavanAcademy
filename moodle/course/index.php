@@ -33,6 +33,14 @@ if ($CFG->forcelogin) {
     require_login();
 }
 
+// The standard course catalogue is now the Academy library.
+if (isloggedin() && !isguestuser() && !optional_param('classic', false, PARAM_BOOL)) {
+    $seavanroute = 'catalog';
+    $seavancategory = $categoryid;
+    require($CFG->dirroot . '/local/seavan/index.php');
+    exit;
+}
+
 $heading = $site->fullname;
 if ($categoryid) {
     $category = core_course_category::get($categoryid); // This will validate access.
