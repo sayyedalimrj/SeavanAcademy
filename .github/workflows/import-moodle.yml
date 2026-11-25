@@ -6,6 +6,8 @@ on:
       - '.github/workflows/import-moodle.yml'
       - 'moodle/theme/seavan/**'
       - 'moodle/local/seavan/**'
+      - 'moodle/local/seavanmedia/**'
+      - 'tests/media-smoke.py'
       - 'docker/**'
       - 'Dockerfile'
       - 'compose.yaml'
@@ -42,6 +44,9 @@ jobs:
         run: |
           set -euo pipefail
           printf 'BIND_IP=127.0.0.1\nSITE_URL=http://127.0.0.1:8080\nADMIN_EMAIL=admin@example.invalid\nADMIN_PASSWORD=Aa1!%s\nDB_PASSWORD=%s\nDB_ROOT_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
+          mkdir -p "courses/CI Media Course/Chapter 1"
+          printf '0123456789abcdefghijklmnopqrstuvwxyz' > "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
+          touch -d '5 minutes ago' "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
           docker compose up -d --build
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8080/login/index.php -o /tmp/login.html; then
@@ -76,6 +81,10 @@ jobs:
               assert 'seavan-login-story' not in page, 'Login failed'
           print('Authenticated Academy routes passed.')
           PY
+          docker compose exec -T web sh -c 'find /var/www/html/local/seavanmedia -name "*.php" -exec php -l {} \;'
+          node --check moodle/local/seavanmedia/player.js
+          docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
+          python3 tests/media-smoke.py
       - name: Clean test environment
         if: always()
         run: |
