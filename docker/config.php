@@ -12,7 +12,20 @@ $CFG->prefix = 'mdl_';
 $CFG->dboptions = ['dbpersist' => 0, 'dbport' => 3306, 'dbsocket' => '', 'dbcollation' => 'utf8mb4_unicode_ci'];
 $CFG->wwwroot = getenv('SITE_URL');
 if (getenv('SSL_PROXY') === '1') {
+    // Codespaces terminates HTTPS outside Apache and may rewrite the Host header.
+    // Use the fixed configured origin, never a host supplied by the client.
+    $origin = parse_url($CFG->wwwroot);
+    if (($origin['scheme'] ?? '') !== 'https' || empty($origin['host'])) {
+        throw new RuntimeException('SSL_PROXY requires a valid HTTPS SITE_URL');
+    }
     $CFG->sslproxy = true;
+    if (PHP_SAPI !== 'cli') {
+        $_SERVER['HTTP_HOST'] = $origin['host'] . (isset($origin['port']) ? ':' . $origin['port'] : '');
+        $_SERVER['SERVER_NAME'] = $origin['host'];
+        $_SERVER['SERVER_PORT'] = $origin['port'] ?? 443;
+        $_SERVER['HTTPS'] = 'on';
+        $_SERVER['REQUEST_SCHEME'] = 'https';
+    }
 }
 $CFG->dataroot = '/var/moodledata';
 $CFG->admin = 'admin';
