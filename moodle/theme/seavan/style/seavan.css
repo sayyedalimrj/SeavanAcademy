@@ -35,3 +35,48 @@ body { background: #f4f7f6; color: #203831; }
 .seavan-course:nth-child(3n+2) .seavan-course-cover {background:#405c80;}
 .seavan-course:nth-child(3n+3) .seavan-course-cover {background:#806139;}
 .seavan-course-symbol {font:42px Arial;opacity:.9;}
+
+/* v0.2: responsive, accessible learning workspace */
+:root { --seavan-ink:#203831; --seavan-green:#176b60; --seavan-muted:#526a61; --seavan-border:#dce7e3; }
+.seavan-shell { line-height:1.85; }
+.seavan-login-wrapper { display:flex; gap:clamp(1rem,4vw,4rem); align-items:center; justify-content:center; max-width:1120px; margin:auto; padding:2rem; }
+.seavan-login-story { flex:1; max-width:460px; padding:1rem; }
+.seavan-login-story h2 { font-size:clamp(1.8rem,4vw,2.6rem); line-height:1.6; font-weight:700; margin:2rem 0 1rem; }
+.seavan-login-story p { color:var(--seavan-muted); line-height:2; }
+.seavan-login-brand { display:flex; gap:.8rem; align-items:center; font-weight:700; font-size:1.25rem; color:#174e45; }
+.seavan-login-brand small { display:block; font:10px Arial,sans-serif; letter-spacing:2px; }
+.seavan-brand-mark { background:#176b60;color:white;border-radius:14px;width:48px;height:48px;display:grid;place-items:center;font:bold 28px Arial; }
+.seavan-login-values { display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.5rem; }
+.seavan-login-values span { background:#fff;border:1px solid var(--seavan-border);border-radius:20px;padding:.35rem .8rem;font-size:.85rem; }
+.seavan-login-wrapper .login-container { flex:1; width:100%; min-width:0; }
+.seavan-nav { display:flex; flex-wrap:wrap; gap:.5rem; margin:0 0 1.3rem; }
+.seavan-nav a { border:1px solid var(--seavan-border); border-radius:9px; background:white; color:var(--seavan-green); padding:.45rem 1rem; text-decoration:none; }
+.seavan-nav a[aria-current="page"] { background:#176b60; color:white; border-color:#176b60; }
+.seavan-hero { position:relative; overflow:hidden; }
+.seavan-hero h2,.seavan-hero p,.seavan-hero a { position:relative;z-index:1; }
+.seavan-hero::after { content:""; position:absolute; inset-inline-end:-80px; bottom:-125px; width:300px; height:300px; border:1px solid #ffffff35; border-radius:50%; box-shadow:0 0 0 35px #ffffff09,0 0 0 70px #ffffff06; pointer-events:none; }
+.seavan-stats { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:1rem 0; }
+.seavan-stat { background:white;border:1px solid var(--seavan-border);border-radius:13px;padding:1rem; }
+.seavan-stat strong { font-size:1.6rem;display:block;color:#176b60;line-height:1.4; }
+.seavan-stat span { font-size:.85rem;color:var(--seavan-muted); }
+.seavan-course { padding:.8rem; }
+.seavan-course-cover { min-height:130px; background:linear-gradient(130deg,#2f7a68,#174e45); overflow:hidden; }
+.seavan-course:nth-child(3n+2) .seavan-course-cover { background:linear-gradient(130deg,#526c91,#314a70); }
+.seavan-course:nth-child(3n+3) .seavan-course-cover { background:linear-gradient(130deg,#a98653,#725735); }
+.seavan-course-cover img { width:100%;height:130px;object-fit:cover;border-radius:9px; }
+.seavan-course-cover:has(img) { padding:0; }
+.seavan-course h3 { line-height:1.7; }
+.seavan-course .btn { align-self:stretch; }
+.seavan-course .seavan-secondary { font-size:.85rem;text-align:center; }
+.seavan-search .form-control { flex:1 1 220px; }
+.seavan-search select { max-width:230px; }
+.seavan-section { display:flex;align-items:center;justify-content:space-between;gap:1rem; }
+.seavan-note { font-size:.85rem; color:var(--seavan-muted); margin:.6rem 0; }
+.seavan-action { min-height:110px; }
+.seavan-action:focus-visible,.seavan-nav a:focus-visible { outline:3px solid #c59a50; outline-offset:3px; }
+.seavan-shell video,.seavan-shell iframe { max-width:100%; }
+.pagelayout-course .activity-item { border-radius:13px; }
+.pagelayout-course .activity-item .activityname { line-height:1.8; }
+#page-mod-resource-view .resourcecontent video,#page-mod-page-view video { max-width:100%; height:auto; border-radius:10px; }
+@media(max-width:767px) { .seavan-login-wrapper { flex-direction:column; padding:.5rem;gap:1rem; } .seavan-login-story { padding:.5rem;text-align:center; } .seavan-login-brand,.seavan-login-values { justify-content:center; } .seavan-login-story h2 { margin:.6rem 0;font-size:1.65rem; } .seavan-login-story p { margin-bottom:.5rem; } .seavan-login-values { display:none; } .seavan-stats { gap:.4rem; } .seavan-stat { padding:.65rem; } .seavan-stat strong { font-size:1.3rem; } .seavan-stat span { font-size:.72rem; } .seavan-search select { max-width:100%; } }
+@media(prefers-reduced-motion:reduce) { .seavan-shell * { scroll-behavior:auto;transition:none; } }
