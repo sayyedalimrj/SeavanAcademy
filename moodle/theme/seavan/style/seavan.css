@@ -127,3 +127,49 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{
 .sa-session-results{display:grid;gap:8px}.sa-session-result{display:block;background:#fff;border:1px solid var(--sa-border);border-radius:10px;padding:12px 16px;text-decoration:none}.sa-session-result strong{display:block;font-size:.9rem}.sa-session-result small{display:block;font-size:.76rem;color:var(--sa-muted)}.sa-session-result:hover{background:#edf3fa}
 
 .sa-dark-toggle{border:1px solid var(--sa-border);border-radius:9px;background:var(--sa-paper);color:var(--sa-ink);width:38px;height:38px;font-size:1.2rem;margin-inline-start:auto}.sa-dark-toggle+.sa-account{margin-inline-start:0}.sa-dark{--sa-bg:#111a28;--sa-paper:#1c293a;--sa-ink:#e4ecf7;--sa-muted:#b0c0d4;--sa-border:#35465c;--sa-navy:#c5dbf6;background:var(--sa-bg);color:var(--sa-ink)}.sa-dark .sa-header,.sa-dark .seavan-course,.sa-dark .seavan-resume,.sa-dark .sa-admin-panel,.sa-dark .sa-advanced,.sa-dark .sam-main,.sa-dark .sam-side,.sa-dark .sa-session-result,.sa-dark .seavan-empty,.sa-dark .seavan-shell .table-responsive{background:var(--sa-paper);color:var(--sa-ink);border-color:var(--sa-border)}.sa-dark .sam,.sa-dark .sam-title,.sa-dark .sam-lesson,.sa-dark .sam-course-title{color:var(--sa-ink)}.sa-dark .sam-muted,.sa-dark .sam-extra,.sa-dark .sam-lesson small,.sa-dark .sam-crumb{color:var(--sa-muted)}.sa-dark .sam-lesson.active,.sa-dark .sam-lesson:hover,.sa-dark .sa-main-nav a:hover{background:#2c4057}.sa-dark .form-control,.sa-dark .custom-select{background:#172333;color:var(--sa-ink);border-color:var(--sa-border)}.sa-dark .seavan-hero{background:#173559}.sa-dark .seavan-hero .btn{color:#173559}.sa-dark .sa-brand img{background:white;border-radius:4px}.sa-dark .btn-primary{background:#365a83;border-color:#365a83;color:white}.sa-dark .sam-filetools .btn-primary{background:#fcaf17;color:#173559}.sa-dark .sa-advanced summary,.sa-dark .sam-chapter summary{color:var(--sa-ink)}.sa-dark .sam #sam-percent{color:var(--sa-ink)}.sa-dark .sam-playtools .btn{color:#c5dbf6;background:#243549;border-color:#35465c}@media(max-width:800px){.sa-dark-toggle{order:1}.sa-account{order:1}}
+
+/* RC2: compact product workspace, distinct learning and administrative areas. */
+.sa-header-inner{max-width:1280px;min-height:68px;gap:26px}
+.sa-header-tools{display:flex;align-items:center;gap:10px;margin-inline-start:auto;min-width:0}
+.sa-header-tools .sa-account{margin:0;gap:8px}
+.sa-header-tools .sa-dark-toggle{margin:0;flex:none}
+.sa-content{max-width:1280px;padding:32px 28px 44px}
+.sa-welcome{margin:0 0 24px;padding:0 0 17px;border-bottom:1px solid var(--sa-border)}
+.sa-welcome h1,.sa-page-title{font-size:1.65rem;font-weight:700;line-height:1.6;margin:0 0 5px}
+.sa-welcome p{color:var(--sa-muted);margin:0;font-size:.9rem}
+.sa-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
+.sa-title-row .seavan-section{margin:0}
+.sa-subtle-link{font-size:.83rem;color:var(--sa-muted);text-decoration:underline}
+.seavan-search{background:var(--sa-paper);padding:10px;border:1px solid var(--sa-border);border-radius:12px;gap:8px}
+.seavan-search label{margin:0;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.seavan-search .form-control,.seavan-search .custom-select,.seavan-search .btn{min-height:42px}
+.seavan-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.seavan-course{padding:0;overflow:hidden;gap:9px;border-radius:14px}
+.seavan-course-cover{aspect-ratio:16/9;border-radius:0;min-height:0;position:relative}
+.seavan-course-cover img{height:100%;width:100%;object-fit:cover;position:absolute;inset:0}
+.seavan-course>h3,.seavan-course>span,.seavan-course>progress,.seavan-course>a{margin-inline:14px}
+.seavan-course>h3{font-size:1rem;min-height:3.4em}
+.seavan-course>progress,.seavan-course>a{width:calc(100% - 28px)}
+.seavan-course>a:last-child{margin-bottom:14px}
+.seavan-course-cover:empty{background:#e6edf5}
+.seavan-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:22px 0}
+.sa-admin-panel{padding:20px}
+.sa-admin-panel h3{font-size:1.03rem}
+.sa-admin-link{position:relative;padding:12px 0 12px 25px}
+.sa-admin-link:after{content:"‹";position:absolute;inset-inline-end:0;top:15px;color:var(--sa-muted);font-size:1.1rem}
+.sa-admin-back{font-size:.83rem;margin-bottom:18px;color:var(--sa-muted)}
+.sa-main>h2,.sa-main>h1{font-size:1.5rem;font-weight:700;margin:0 0 18px}
+.sa-main>h3{font-size:1.1rem;font-weight:700;margin-top:26px}
+.sa-main>form,.sa-main>table,.sa-main>.table-responsive{max-width:100%}
+.sa-main .table-responsive{overflow-x:auto}
+.sa-main table{background:var(--sa-paper);border:1px solid var(--sa-border);border-radius:10px;font-size:.85rem}
+.sa-main th{white-space:nowrap;font-weight:700}
+.sa-main td{vertical-align:middle;overflow-wrap:anywhere}
+.sa-main td code{font-size:.72rem;word-break:break-all}
+.sa-main .singlebutton{margin:4px 0}
+.sa-main .singlebutton .btn{font-size:.8rem}
+.sa-dark .sa-main table,.sa-dark .sa-main .card{background:var(--sa-paper);color:var(--sa-ink)}
+.sa-dark .sa-main th,.sa-dark .sa-main td{border-color:var(--sa-border);color:var(--sa-ink)}
+@media(max-width:950px){.seavan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sa-header-inner{gap:15px}}
+@media(max-width:800px){.sa-header-inner{padding:10px 14px 0;gap:5px}.sa-header-tools{order:1;gap:5px}.sa-header-tools .sa-account{gap:3px}.sa-main-nav{order:2}.sa-brand span{font-size:.72rem}.sa-content{padding:18px 14px 26px}.sa-welcome h1,.sa-page-title{font-size:1.4rem}.sa-welcome{margin-bottom:18px}}
+@media(max-width:540px){.seavan-grid,.seavan-actions{grid-template-columns:minmax(0,1fr);gap:12px}.seavan-course>h3{min-height:0}.seavan-search .form-control{flex-basis:100%}.seavan-search .custom-select{flex:1 1 120px;min-width:0}.sa-header-tools .sa-dark-toggle{width:32px;height:32px}.sa-brand img{width:100px}.sa-brand span{display:none}.sa-title-row .seavan-section{font-size:1.12rem}.sa-admin-panel{padding:16px}.sa-content{padding-inline:12px}}
