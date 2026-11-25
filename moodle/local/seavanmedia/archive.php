@@ -1,0 +1,74 @@
+<?php
+require(__DIR__.'/../../config.php');require_once(__DIR__.'/lib.php');require_once(__DIR__.'/assets.php');
+require_login();require_capability('moodle/site:config',context_system::instance());
+$url=new moodle_url('/local/seavanmedia/archive.php');
+$folders=local_seavanmedia_folders();
+if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
+    require_sesskey();$action=required_param('action',PARAM_ALPHA);
+    if($action==='policy'){
+        $c=get_course(required_param('id',PARAM_INT));
+        if(!local_seavanmedia_is_course($c)){throw new moodle_exception('invalidrequest');}
+        set_config('nodownload_'.$c->id,optional_param('blocked',0,PARAM_BOOL)?'1':'0','local_seavanmedia');
+    }elseif($action==='upload'){
+        $id=optional_param('id',0,PARAM_INT);
+        $root=$CFG->dataroot.'/seavan-uploads';
+        if(!is_dir($root)){mkdir($root,0770,true);}
+        if($id){
+            $c=get_course($id);$folder=$folders[$c->idnumber]??'';
+            if(!$folder||!str_starts_with($folder,$root.'/')){throw new moodle_exception('invalidrequest');}
+        }else{
+            $name=clean_filename(required_param('name',PARAM_TEXT));
+            if($name===''||str_starts_with($name,'.')){throw new moodle_exception('invalidrequest');}
+            $folder=$root.'/'.$name;
+            if(file_exists($folder)||!mkdir($folder,0770)){throw new moodle_exception('invalidrequest');}
+        }
+        $f=$_FILES['media']??[];
+        $name=clean_filename($f['name']??'');
+        $ext=strtolower(pathinfo($name,PATHINFO_EXTENSION));
+        if(($f['error']??1)!==UPLOAD_ERR_OK||!is_uploaded_file($f['tmp_name'])||$f['size']>2*1024*1024*1024||
+            !in_array($ext,['mp4','m4v','webm','mkv','mov','avi','wmv','mp3','wav','m4a','pdf','xlsx','docx','pptx','zip','vtt'],true)||
+            str_starts_with($name,'.')||file_exists($folder.'/'.$name)||disk_free_space($root)<$f['size']+1073741824){throw new moodle_exception('invalidrequest');}
+        if(!move_uploaded_file($f['tmp_name'],$folder.'/'.$name)){throw new moodle_exception('invalidrequest');}
+        touch($folder.'/'.$name,time()-180);
+    }elseif($action==='hash'){
+        $c=get_course(required_param('id',PARAM_INT));$f=local_seavanmedia_get_file($c,required_param('file',PARAM_ALPHANUM));
+        sam_queue($c->id,$f,'hash');
+    }else{throw new moodle_exception('invalidrequest');}
+    redirect($url,'تنظیم یا درخواست ثبت شد.');
+}
+$PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_title('مدیریت آرشیو');$PAGE->set_heading('مدیریت آرشیو');
+echo $OUTPUT->header();
+echo html_writer::tag('h2','مدیریت آرشیو و دسترسی');
+$choices=[0=>'دوره جدید'];$courses=$DB->get_records_select('course',$DB->sql_like('idnumber',':prefix'),['prefix'=>'seavanmedia:%'],'fullname','id,fullname,idnumber');
+$table=new html_table();$table->head=['دوره','آرشیو','شناسه ثابت','دانلود','ویرایش اطلاعات'];
+foreach($courses as $c){
+    $folder=$folders[$c->idnumber]??null;
+    if($folder&&str_starts_with($folder,$CFG->dataroot.'/seavan-uploads/')){$choices[$c->id]=$c->fullname;}
+    $blocked=get_config('local_seavanmedia','nodownload_'.$c->id)==='1';
+    $button=$OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['id'=>$c->id,'action'=>'policy','blocked'=>$blocked?0:1,'sesskey'=>sesskey()]),$blocked?'فعال کردن دانلود':'غیرفعال کردن دانلود','post');
+    $table->data[]=[s($c->fullname),$folder?'متصل':'قطع یا نامشخص',html_writer::tag('code',s($c->idnumber)),$button,html_writer::link(new moodle_url('/course/edit.php',['id'=>$c->id]),'کاور و توضیحات')];
+}
+echo html_writer::div(html_writer::table($table),'table-responsive');
+echo html_writer::tag('p','محدودیت دانلود، دکمه‌ها و دانلود ZIP را غیرفعال می‌کند؛ جلوگیری قطعی از ذخیره جریان ویدیو توسط مرورگر نیست.');
+echo html_writer::tag('h3','بارگذاری مستقیم');
+echo html_writer::tag('p','فقط برای مدیر؛ فایل‌های بارگذاری‌شده در فضای Moodledata ذخیره می‌شوند. برای آرشیوهای بزرگ کپی پوشه بهتر است. فایل موجود بازنویسی نمی‌شود.');
+echo html_writer::start_tag('form',['method'=>'post','action'=>$url->out(false),'enctype'=>'multipart/form-data','class'=>'card p-3']);
+foreach(['action'=>'upload','sesskey'=>sesskey()] as $n=>$v){echo html_writer::empty_tag('input',['type'=>'hidden','name'=>$n,'value'=>$v]);}
+echo html_writer::select($choices,'id',0,false,['class'=>'custom-select']);
+echo html_writer::empty_tag('input',['name'=>'name','placeholder'=>'نام دوره جدید (اگر دوره جدید انتخاب شده)','class'=>'form-control my-2']);
+echo html_writer::empty_tag('input',['type'=>'file','name'=>'media','required'=>'required','class'=>'form-control']);
+echo html_writer::tag('button','بارگذاری فایل',['class'=>'btn btn-primary mt-2','type'=>'submit']);echo html_writer::end_tag('form');
+echo html_writer::tag('h3','شناسه و نسخه فایل‌ها',['class'=>'mt-4']);
+echo html_writer::tag('p','قبل از تغییر نام پوشه، شناسه ثابت آن را در فایل .seavan-id قرار دهید. برای تغییر نام یک فایل بدون تغییر محتوا، شناسه قبلی را در .seavan-aliases.json ثبت کنید. نسخه جدید محتوای متفاوت باید شناسه جدا داشته باشد؛ فایل قبلی را نگه دارید.');
+$id=optional_param('course',0,PARAM_INT);
+echo html_writer::start_tag('form',['method'=>'get','action'=>$url->out(false)]);
+echo html_writer::select([0=>'انتخاب دوره']+array_map(fn($c)=>$c->fullname,$courses),'course',$id,false,['class'=>'custom-select']);
+echo html_writer::tag('button','نمایش شناسه‌ها',['class'=>'btn btn-outline-primary']);echo html_writer::end_tag('form');
+if($id&&isset($courses[$id])){
+    $t=new html_table();$t->head=['نام نسبی','شناسه','SHA-256','عملیات'];
+    foreach(local_seavanmedia_course_files($courses[$id]) as $key=>$f){
+        $p=sam_asset_dir($id,$key).'/sha256.json';$h=is_file($p)?json_decode(file_get_contents($p),true):[];
+        $t->data[]=[s($f['rel']),html_writer::tag('code',s($key)),s($h['hash']??'بررسی نشده'),$OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['action'=>'hash','id'=>$id,'file'=>$key,'sesskey'=>sesskey()]),'محاسبه هش','post')];
+    }echo html_writer::div(html_writer::table($t),'table-responsive');
+}
+echo $OUTPUT->footer();
