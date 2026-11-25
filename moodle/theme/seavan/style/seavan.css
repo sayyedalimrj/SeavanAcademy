@@ -220,3 +220,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,su
 .sa-native-return{align-items:center;padding:8px 12px;border-radius:8px;color:#173559;background:#edf2f8;font-weight:600;font-size:.85rem;text-decoration:none!important}
 
 .seavan-login-story h1{color:white;font-size:1.6rem;line-height:1.7;font-weight:700;margin:10px 0}@media(max-width:800px){.seavan-login-story h1{font-size:1.25rem;margin:8px 0}}
+
+/* Final review: prevent dense mobile tables collapsing into single letters. */
+.sa-main .table-responsive table{min-width:560px;table-layout:auto}.sa-main .table-responsive th,.sa-main .table-responsive td{overflow-wrap:normal;word-break:normal}.sa-main .table-responsive td:first-child{min-width:145px;overflow-wrap:anywhere}.sa-main .table-responsive td code{overflow-wrap:anywhere}.sa-dark .sa-main .table-responsive{background:var(--sa-paper)}.sa-main .table-responsive{overscroll-behavior-inline:contain}.sa-main .table-responsive:focus-within{outline:2px solid var(--sa-gold)}
+@media(max-width:540px){.sa-main .table-responsive table{min-width:500px}.sa-main .table-responsive{max-width:100%;overflow-x:auto}.sa-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.sa-metric span{line-height:1.6;display:block}}
