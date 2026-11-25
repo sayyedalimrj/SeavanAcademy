@@ -5,6 +5,7 @@ x-app: &app
   environment:
     SITE_URL: ${SITE_URL:?Run START.cmd first}
     DB_PASSWORD: ${DB_PASSWORD:?Run START.cmd first}
+    SSL_PROXY: ${SSL_PROXY:-0}
   volumes:
     - moodledata:/var/moodledata
 services:
@@ -28,6 +29,7 @@ services:
     environment:
       SITE_URL: ${SITE_URL:?Run START.cmd first}
       DB_PASSWORD: ${DB_PASSWORD:?Run START.cmd first}
+      SSL_PROXY: ${SSL_PROXY:-0}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Run START.cmd first}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?Run START.cmd first}
     entrypoint: ["/usr/local/bin/seavan-init"]
