@@ -1,0 +1,4 @@
+{$ACADEMY_HOST} {
+    tls internal
+    reverse_proxy web:80
+}
