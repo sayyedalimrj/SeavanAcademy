@@ -38,8 +38,9 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     if($cir->get_error()!==null){throw new moodle_exception('csvloaderror','',null,$cir->get_error());}
     redirect(new moodle_url('/admin/tool/uploaduser/index.php',['iid'=>$iid]));
 }
-$PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_title('ورود کارکنان از اکسل');$PAGE->set_heading('ورود کارکنان از اکسل');
+$PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_pagelayout(($CFG->theme??'')==='seavan'?'seavanworkspace':'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title('ورود کارکنان از اکسل');$PAGE->set_heading('ورود کارکنان از اکسل');
 echo $OUTPUT->header();
+echo html_writer::div(html_writer::link(new moodle_url('/local/seavan/index.php',['view'=>'manage']),'مدیریت ← بازگشت'),'sa-admin-back');
 echo html_writer::tag('h2','ورود کارکنان از Excel');
 echo html_writer::tag('p','فایل XLSX با سرستون انگلیسی username, firstname, lastname, email و در صورت نیاز idnumber, department, institution, cohort1, password. تا ۲۰۰۰ نفر. مرحله بعد پیش‌نمایش و تأیید استاندارد Moodle است.');
 echo html_writer::start_tag('form',['method'=>'post','enctype'=>'multipart/form-data','action'=>$url->out(false)]);
