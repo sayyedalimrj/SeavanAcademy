@@ -22,6 +22,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Import verified official source
         shell: bash
         run: |
@@ -39,13 +41,27 @@ jobs:
             git pull --rebase origin main
             git push origin HEAD:main
           fi
+      - name: Verify Moodle core remains unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=$(git log --format=%H --grep='^Vendor official Moodle 4.5.16 source' -1)
+          test -n "$base"
+          git diff --exit-code "$base" HEAD -- moodle/ ':!moodle/local/seavan/**' ':!moodle/local/seavanmedia/**' ':!moodle/theme/seavan/**'
       - name: Build and initialize test site
         shell: bash
         run: |
           set -euo pipefail
           printf 'BIND_IP=127.0.0.1\nSITE_URL=http://127.0.0.1:8080\nADMIN_EMAIL=admin@example.invalid\nADMIN_PASSWORD=Aa1!%s\nDB_PASSWORD=%s\nDB_ROOT_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
           mkdir -p "courses/CI Media Course/Chapter 1"
-          printf '0123456789abcdefghijklmnopqrstuvwxyz' > "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update && sudo apt-get install -y ffmpeg; fi
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=navy:s=320x180:r=5 -t 20 -c:v libx264 -pix_fmt yuv420p -movflags +faststart "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
+          mkdir -p "courses/CI Collection/Other Course/فصل ۲" "courses/CI Collection/Other Course/فصل ۱۰" "courses/CI ignored"
+          touch "courses/CI Collection/.seavan-category" "courses/CI ignored/.seavan-ignore"
+          cp "courses/CI Media Course/Chapter 1/01 - Sample.mp4" "courses/CI Collection/Other Course/فصل ۲/۲ - Example.mp4"
+          cp "courses/CI Media Course/Chapter 1/01 - Sample.mp4" "courses/CI Collection/Other Course/فصل ۱۰/۱۰ - Example.mp4"
+          cp "courses/CI Media Course/Chapter 1/01 - Sample.mp4" "courses/CI ignored/hidden.mp4"
+          find courses -type f -exec touch -d '5 minutes ago' {} +
           touch -d '5 minutes ago' "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
           docker compose up -d --build
           for i in $(seq 1 60); do
@@ -81,8 +97,9 @@ jobs:
               assert 'seavan-login-story' not in page, 'Login failed'
           print('Authenticated Academy routes passed.')
           PY
-          docker compose exec -T web sh -c 'find /var/www/html/local/seavanmedia -name "*.php" -exec php -l {} \;'
+          docker compose exec -T web sh -c 'find /var/www/html/local/seavanmedia -name "*.php" -print0 | xargs -0 -n1 php -l'
           node --check moodle/local/seavanmedia/player.js
+          docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
           docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
           python3 tests/media-smoke.py
       - name: Clean test environment
