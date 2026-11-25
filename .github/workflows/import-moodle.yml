@@ -13,6 +13,9 @@ on:
       - 'tests/media-smoke.py'
       - 'tests/player-browser.py'
       - 'docker/**'
+      - 'manage.ps1'
+      - '*.cmd'
+      - 'docker/**'
       - 'Dockerfile'
       - 'compose.yaml'
 permissions:
@@ -103,6 +106,8 @@ jobs:
           node --check moodle/local/seavanmedia/player.js
           docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
           docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
+          docker compose exec -T -u www-data web php /var/www/html/local/seavanmedia/cli/media.php --action=probe --limit=20
+          docker compose exec -T web sh -c 'test -n "$(find /var/moodledata/seavan-assets -name cover.jpg -print -quit)"'
           python3 tests/media-smoke.py
       - name: Test real browser video playback
         run: |
