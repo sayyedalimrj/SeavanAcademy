@@ -40,6 +40,7 @@ jobs:
           set -euo pipefail
           test -f moodle/version.php
       - name: Build and initialize test site
+        id: site_ready
         shell: bash
         run: |
           set -euo pipefail
@@ -116,6 +117,7 @@ jobs:
           path: ui-screenshots/
           if-no-files-found: ignore
       - name: Test learner access and concurrent media requests
+        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
         run: |
           docker compose exec -T -u www-data web php < tests/security-fixture.php > /tmp/security-fixture.json
           python3 tests/security-load.py /tmp/security-fixture.json
