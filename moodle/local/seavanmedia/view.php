@@ -51,8 +51,30 @@ if(in_array($f['kind'],['video','audio'],true)){
     $attrs=['id'=>'sam-player','src'=>local_seavanmedia_url($id,$key)->out(false),'controls'=>true,'preload'=>'metadata',
         'data-position'=>(string)(($p && $p->percent<95)?$p->position:0),'data-ranges'=>$p->rangesjson??'[]','data-endpoint'=>(new moodle_url('/local/seavanmedia/progress.php'))->out(false),
         'data-course'=>$id,'data-file'=>$key,'data-sesskey'=>sesskey(),'playsinline'=>true];
-    echo html_writer::tag($f['kind'],'مرورگر شما از این نوع رسانه پشتیبانی نمی‌کند.',$attrs);
-    echo html_writer::start_div('sam-tools sam-playtools');
+    $attrs['class']='video-js vjs-big-play-centered';
+    $attrs['data-kind']=$f['kind'];
+    $attrs['data-mime']=$f['mime'];
+    $attrs['data-language-url']=(new moodle_url('/media/player/videojs/videojs/lang/fa.json'))->out(false);
+    unset($attrs['src']);
+    $sources=html_writer::empty_tag('source',['src'=>local_seavanmedia_url($id,$key)->out(false),'type'=>$f['mime']]);
+    // Match WebVTT sidecars by exact stem and optional language suffix.
+    $stem=pathinfo($f['name'],PATHINFO_FILENAME);
+    foreach($files as $subtitle){
+        if($subtitle['group']!==$f['group']||strtolower(pathinfo($subtitle['name'],PATHINFO_EXTENSION))!=='vtt'){continue;}
+        $name=pathinfo($subtitle['name'],PATHINFO_FILENAME);
+        $lang='fa';
+        if($name!==$stem){
+            if(!str_starts_with($name,$stem.'.')){continue;}
+            $lang=substr($name,strlen($stem)+1);
+            if(!preg_match('/^[a-z]{2,3}(?:-[A-Za-z]{2,8})?$/D',$lang)){continue;}
+        }
+        $label=['fa'=>'فارسی','en'=>'English','ar'=>'العربية'][$lang]??$lang;
+        $trackurl=local_seavanmedia_url($id,$subtitle['key']);
+        $trackurl->param('track',1);
+        $sources.=html_writer::empty_tag('track',['src'=>$trackurl->out(false),'kind'=>'subtitles','srclang'=>$lang,'label'=>$label]);
+    }
+    echo html_writer::div(html_writer::tag($f['kind'],$sources.'مرورگر شما از این نوع رسانه پشتیبانی نمی‌کند.',$attrs),'sam-player-wrap');
+    echo html_writer::start_div('sam-tools sam-playtools',['id'=>'sam-native-controls']);
     echo html_writer::tag('label','سرعت '.html_writer::select(['0.75'=>'۰٫۷۵','1'=>'۱×','1.25'=>'۱٫۲۵','1.5'=>'۱٫۵','1.75'=>'۱٫۷۵','2'=>'۲×'],'speed','1',false,['id'=>'sam-speed','class'=>'custom-select']),[]);
     echo html_writer::tag('button','۱۰ ثانیه عقب',['id'=>'sam-back','type'=>'button','class'=>'btn btn-outline-primary']);
     echo html_writer::tag('button','۱۰ ثانیه جلو',['id'=>'sam-forward','type'=>'button','class'=>'btn btn-outline-primary']);
