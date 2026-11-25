@@ -23,6 +23,10 @@ $add('moodle/user:create', 'افزودن همکار', 'ساخت حساب کار�
 $add('moodle/user:update', 'کاربران', 'جست‌وجو و ویرایش حساب‌ها', '/admin/user.php');
 $add('moodle/site:uploadusers', 'افزودن گروهی کاربران', 'ورود فهرست CSV کارکنان', '/admin/tool/uploaduser/index.php');
 $add('moodle/category:manage', 'دوره‌ها و دسته‌بندی', 'ساخت دوره، ویرایش و مرتب‌سازی', '/course/management.php');
+$defaultcategory = core_course_category::get_default();
+if ($defaultcategory && has_capability('moodle/course:create', context_coursecat::instance($defaultcategory->id))) {
+    $actions[] = ['افزودن دوره', 'ایجاد یک آموزش جدید', new moodle_url('/course/edit.php',['category'=>$defaultcategory->id])];
+}
 $add('moodle/cohort:manage', 'گروه‌های آموزشی', 'مدیریت گروه‌های همکاران', '/cohort/index.php');
 $add('report/log:view', 'گزارش فعالیت', 'گزارش‌های استاندارد مودل', '/report/log/index.php', ['id'=>SITEID]);
 $add('moodle/site:config', 'ظاهر و فونت', 'بارگذاری ایران‌سنس دارای مجوز', '/admin/settings.php', ['section'=>'themesettingseavan']);
@@ -141,7 +145,7 @@ if ($view === 'manage') {
         $courseobj = $item instanceof core_course_list_element ? $item : new core_course_list_element($item);
         foreach ($courseobj->get_course_overviewfiles() as $file) {
             if ($file->is_valid_image()) {
-                $imageurl = moodle_url::make_pluginfile_url($ctx->id,'course','overviewfiles',null,$file->get_filepath(),$file->get_filename());
+                $imageurl = moodle_url::make_file_url($CFG->wwwroot . '/pluginfile.php', '/' . $file->get_contextid() . '/' . $file->get_component() . '/' . $file->get_filearea() . $file->get_filepath() . $file->get_filename());
                 $cover = html_writer::empty_tag('img',['src'=>$imageurl->out(false),'alt'=>'','loading'=>'lazy']);
                 break;
             }
