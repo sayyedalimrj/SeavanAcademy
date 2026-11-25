@@ -31,10 +31,11 @@ if (!(Test-Path .env)) {
   Write-Host "Initial administrator: admin / $admin"
   Write-Host 'Keep .env private. Change admin password after login.'
 }
-New-Item -ItemType Directory -Path courses -Force | Out-Null
-docker compose up -d --build
+New-Item -ItemType Directory -Path courses,courses2,courses3 -Force | Out-Null
+$extra=@(); if((Test-Path compose.https.yaml) -and (Get-Content .env | Where-Object {$_ -like 'ACADEMY_HOST=*'})){ $extra=@('-f','compose.yaml','-f','compose.https.yaml') }
+docker compose @extra up -d --build
 Check-Exit
-docker compose ps -a
+docker compose @extra ps -a
 Check-Exit
 $url = (Get-Content .env | Where-Object { $_ -like 'SITE_URL=*' }) -replace '^SITE_URL=', ''
 Write-Host "Academy URL: $url"
