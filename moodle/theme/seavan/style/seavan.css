@@ -123,3 +123,5 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{
  .pagelayout-login .seavan-login-wrapper .login-container{padding:22px}
 }
 @media(prefers-reduced-motion:reduce){.sa-frame *{scroll-behavior:auto;transition:none}}
+
+.sa-session-results{display:grid;gap:8px}.sa-session-result{display:block;background:#fff;border:1px solid var(--sa-border);border-radius:10px;padding:12px 16px;text-decoration:none}.sa-session-result strong{display:block;font-size:.9rem}.sa-session-result small{display:block;font-size:.76rem;color:var(--sa-muted)}.sa-session-result:hover{background:#edf3fa}
