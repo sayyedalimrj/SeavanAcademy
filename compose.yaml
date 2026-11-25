@@ -8,6 +8,10 @@ x-app: &app
     SSL_PROXY: ${SSL_PROXY:-0}
   volumes:
     - moodledata:/var/moodledata
+    - type: bind
+      source: ${COURSES_DIR:-./courses}
+      target: /srv/seavan-courses
+      read_only: true
 services:
   db:
     image: mariadb:11.4
