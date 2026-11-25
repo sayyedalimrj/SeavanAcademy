@@ -50,6 +50,14 @@ if ($hassiteconfig && moodle_needs_upgrading()) {
     redirect(new moodle_url('/admin/index.php'));
 }
 
+// Seavan's native daily learning homepage. The original dashboard remains available.
+if (!isguestuser() && !optional_param('classic', false, PARAM_BOOL) &&
+        $edit === null && $reset === null && !optional_param('setdefaulthome', false, PARAM_BOOL)) {
+    $seavanroute = 'home';
+    require($CFG->dirroot . '/local/seavan/index.php');
+    exit;
+}
+
 $strmymoodle = get_string('myhome');
 
 if (empty($CFG->enabledashboard)) {
