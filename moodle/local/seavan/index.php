@@ -78,14 +78,6 @@ if ($view === 'home') {
     echo html_writer::tag('p','هر روز، یک قدم جلوتر. آموزش‌های مورد نیازت را با سرعت خودت دنبال کن.');
     echo html_writer::link($go('catalog'),'مشاهده کتابخانه آموزش‌ها',['class'=>'btn btn-light']);
     echo html_writer::end_div();
-    $completed = count(array_filter($enrolled, fn($row)=>$row['progress'] !== null && $row['progress'] >= 100));
-    $ongoing = count(array_filter($enrolled, fn($row)=>$row['progress'] !== null && $row['progress'] > 0 && $row['progress'] < 100));
-    // Keep the learning home focused on courses rather than administrative counters.
-    if (false) { echo html_writer::start_div('seavan-stats');
-    foreach ([[count($enrolled),'دوره‌های من'],[$ongoing,'در حال یادگیری'],[$completed,'تکمیل‌شده']] as [$n,$label]) {
-        echo html_writer::div(html_writer::tag('strong',$digits($n)) . html_writer::tag('span',$label), 'seavan-stat');
-    }
-    echo html_writer::end_div(); }
 }
 if ($view === 'manage') {
     echo html_writer::tag('h2','مدیریت آموزش',['class'=>'seavan-section']);
