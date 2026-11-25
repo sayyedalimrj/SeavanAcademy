@@ -30,4 +30,4 @@ docker compose ps -a
 Check-Exit
 $url = (Get-Content .env | Where-Object { $_ -like 'SITE_URL=*' }) -replace '^SITE_URL=', ''
 Write-Host "Academy URL: $url"
-Start-Process ($url + '/local/seavan/index.php')
+Start-Process ($url + '/my/index.php')
