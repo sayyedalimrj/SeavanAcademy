@@ -23,6 +23,10 @@ with sync_playwright() as p:
     assert page.locator(".sa-main-nav a").count() == 3
     assert page.locator(".seavan-grid").evaluate("(e) => getComputedStyle(e).display") == "grid"
     page.screenshot(path=str(shots / "02-library.png"), full_page=True)
+    page.locator("#sa-dark").click()
+    assert page.locator("body.sa-dark").count() == 1
+    page.screenshot(path=str(shots / "02-library-dark.png"), full_page=True)
+    page.locator("#sa-dark").click()
     page.goto(base + "/local/seavan/index.php?view=manage", wait_until="networkidle")
     assert page.locator(".sa-admin-panel").count() == 4
     page.screenshot(path=str(shots / "03-management.png"), full_page=True)
@@ -44,6 +48,10 @@ with sync_playwright() as p:
         page.locator(selector).first.wait_for(timeout=30000)
         assert page.locator(".sa-main-nav").count() == 1, name
         page.screenshot(path=str(shots / (name + ".png")), full_page=True)
+        page.set_viewport_size({"width":390,"height":844})
+        page.screenshot(path=str(shots / (name + "-mobile.png")), full_page=True)
+        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 2"), name + " mobile overflow"
+        page.set_viewport_size({"width":1280,"height":900})
     page.goto(base + "/course/index.php?q=02+-+Browser", wait_until="domcontentloaded")
     result = page.locator(".sa-session-result").filter(has_text="02 - Browser").first
     result.wait_for(timeout=60000)
