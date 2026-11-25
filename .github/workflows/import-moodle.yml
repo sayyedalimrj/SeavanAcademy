@@ -13,6 +13,7 @@ on:
       - 'moodle/local/seavan/**'
       - 'moodle/local/seavanmedia/**'
       - 'tests/**'
+      - '.devcontainer/**'
       - 'docker/**'
       - '*.ps1'
       - 'compose*.yaml'
@@ -121,6 +122,19 @@ jobs:
         run: |
           docker compose exec -T -u www-data web php < tests/security-fixture.php > /tmp/security-fixture.json
           python3 tests/security-load.py /tmp/security-fixture.json
+      - name: Test secure HTTPS proxy-mode login
+        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          bash -n .devcontainer/recover-preview.sh .devcontainer/update-preview.sh
+          sed -i 's|^SITE_URL=.*|SITE_URL=https://academy.preview.test|' .env
+          printf '\nSSL_PROXY=1\n' >> .env
+          docker compose up -d --no-build --no-deps --force-recreate web
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/login/index.php -o /tmp/proxy-login.html; then break; fi
+            sleep 2
+          done
+          SEAVAN_TEST_PASSWORD="$(grep '^ADMIN_PASSWORD=' .env | cut -d= -f2-)" python3 tests/preview-login.py --origin https://academy.preview.test --port 8080
       - name: Clean test environment
         if: always()
         run: |
