@@ -24,84 +24,35 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/behat/lib.php');
-require_once($CFG->dirroot . '/course/lib.php');
 
-// Add block button in editing mode.
-$addblockbutton = '';
-
-if (isloggedin()) {
-    $courseindexopen = (get_user_preferences('drawer-open-index', true) == true);
-    $blockdraweropen = (get_user_preferences('drawer-open-block') == true);
-} else {
-    $courseindexopen = false;
-    $blockdraweropen = false;
-}
-
-if (defined('BEHAT_SITE_RUNNING') && get_user_preferences('behat_keep_drawer_closed') != 1) {
-    $blockdraweropen = true;
-}
-
-$extraclasses = ['uses-drawers'];
-if ($courseindexopen) {
-    $extraclasses[] = 'drawer-open-index';
-}
-
-$blockshtml = '';
-$hasblocks = (strpos($blockshtml, 'data-block=') !== false || !empty($addblockbutton));
-if (!$hasblocks) {
-    $blockdraweropen = false;
-}
-$courseindex = '';
-if (!$courseindex) {
-    $courseindexopen = false;
-}
-
-$bodyattributes = $OUTPUT->body_attributes($extraclasses);
-$forceblockdraweropen = false;
-
-$secondarynavigation = false;
-$overflow = '';
-if (false) { // The Academy workspace has its own navigation.
-    $tablistnav = $PAGE->has_tablist_secondary_navigation();
-    $moremenu = new \core\navigation\output\more_menu($PAGE->secondarynav, 'nav-tabs', true, $tablistnav);
-    $secondarynavigation = $moremenu->export_for_template($OUTPUT);
-    $overflowdata = $PAGE->secondarynav->get_overflow_menu_data();
-    if (!is_null($overflowdata)) {
-        $overflow = $overflowdata->export_for_template($OUTPUT);
-    }
-}
-
-$primary = new core\navigation\output\primary($PAGE);
-$renderer = $PAGE->get_renderer('core');
-$primarymenu = $primary->export_for_template($renderer);
-$buildregionmainsettings = !$PAGE->include_region_main_settings_in_header_actions() && !$PAGE->has_secondary_navigation();
-// If the settings menu will be included in the header then don't add it here.
-$regionmainsettingsmenu = false;
-
-$header = $PAGE->activityheader;
-$headercontent = $header->export_for_template($renderer);
-
-$templatecontext = [
-    'sitename' => format_string($SITE->shortname, true, ['context' => context_course::instance(SITEID), "escape" => false]),
-    'output' => $OUTPUT,
-    'sidepreblocks' => $blockshtml,
-    'hasblocks' => $hasblocks,
-    'bodyattributes' => $bodyattributes,
-    'courseindexopen' => $courseindexopen,
-    'blockdraweropen' => $blockdraweropen,
-    'courseindex' => $courseindex,
-    'primarymoremenu' => $primarymenu['moremenu'],
-    'secondarymoremenu' => $secondarynavigation ?: false,
-    'mobileprimarynav' => $primarymenu['mobileprimarynav'],
-    'usermenu' => $primarymenu['user'],
-    'langmenu' => $primarymenu['lang'],
-    'forceblockdraweropen' => $forceblockdraweropen,
-    'regionmainsettingsmenu' => $regionmainsettingsmenu,
-    'hasregionmainsettingsmenu' => !empty($regionmainsettingsmenu),
-    'overflow' => $overflow,
-    'headercontent' => $headercontent,
-    'addblockbutton' => $addblockbutton
+// Real Moodle rendering hooks and account menu, with one Academy navigation.
+$primary = new \core\navigation\output\primary($PAGE);
+$menu = $primary->export_for_template($OUTPUT);
+$active = $PAGE->url->get_path();
+$view = optional_param('view','home',PARAM_ALPHA);
+$isplayer = str_ends_with($active,'/local/seavanmedia/view.php');
+$manage = has_capability('moodle/site:config', context_system::instance()) ||
+    has_capability('moodle/user:create', context_system::instance()) ||
+    has_capability('moodle/user:update', context_system::instance()) ||
+    has_capability('moodle/category:manage', context_system::instance()) ||
+    has_capability('moodle/cohort:manage', context_system::instance()) ||
+    has_capability('report/log:view', context_system::instance());
+$links = [
+    ['text'=>'خانه','url'=>new moodle_url('/my/index.php'),'active'=>str_ends_with($active,'/my/index.php')],
+    ['text'=>'کتابخانه','url'=>new moodle_url('/course/index.php'),'active'=>$isplayer || str_ends_with($active,'/course/index.php')],
+    ['text'=>'دوره‌های من','url'=>new moodle_url('/my/courses.php'),'active'=>str_ends_with($active,'/my/courses.php')],
 ];
-
-echo $OUTPUT->render_from_template('theme_boost/drawers', $templatecontext);
+if ($manage || ($view === 'manage' && str_ends_with($active,'/local/seavan/index.php'))) {
+    $links[] = ['text'=>'مدیریت','url'=>new moodle_url('/local/seavan/index.php',['view'=>'manage']),
+        'active'=>str_ends_with($active,'/local/seavanmedia/sync.php') || (str_ends_with($active,'/local/seavan/index.php') && $view==='manage')];
+}
+foreach ($links as &$link) { $link['url'] = $link['url']->out(false); }
+unset($link);
+echo $OUTPUT->render_from_template('theme_seavan/workspace', [
+    'output'=>$OUTPUT,
+    'bodyattributes'=>$OUTPUT->body_attributes(),
+    'links'=>$links,
+    'usermenu'=>$menu['user'],
+    'home'=>(new moodle_url('/my/index.php'))->out(false),
+    'logo'=>(new moodle_url('/theme/seavan/pix/company-logo.svg'))->out(false),
+]);
