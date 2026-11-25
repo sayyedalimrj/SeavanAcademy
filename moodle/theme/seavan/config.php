@@ -100,6 +100,7 @@ $THEME->layouts = [
         'defaultregion' => 'side-pre',
     ),
     'login' => array(
+        'theme' => 'seavan',
         'file' => 'login.php',
         'regions' => array(),
         'options' => array('langmenu' => true),
