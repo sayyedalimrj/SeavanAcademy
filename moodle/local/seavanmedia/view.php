@@ -1,6 +1,6 @@
 <?php
 require(__DIR__.'/../../config.php');
-require_once(__DIR__.'/lib.php');
+require_once(__DIR__.'/lib.php');require_once(__DIR__.'/assets.php');
 $id=required_param('id',PARAM_INT);
 $course=local_seavanmedia_require_course($id);
 $files=local_seavanmedia_course_files($course);
@@ -41,7 +41,9 @@ echo html_writer::tag('h1',format_string($course->fullname),['class'=>'sam-cours
 echo html_writer::link(new moodle_url('/course/view.php',['id'=>$id,'classic'=>1]),'سایر امکانات دوره',['class'=>'sam-extra']);
 echo html_writer::end_div();
 if(!$files){echo html_writer::div('فایل‌های این دوره هنوز در مسیر سرور در دسترس نیستند.','alert alert-info');echo html_writer::end_div();echo $OUTPUT->footer();exit;}
-$f=$files[$key];$p=$history[$key]??null;
+$f=$files[$key];$p=$history[$key]??null;$meta=sam_metadata($id,$key);
+$note=json_decode(get_user_preferences('seavanmedia_note_'.$id.'_'.$key,'{}'),true)?:[];
+$converted=is_file(sam_asset_dir($id,$key).'/converted.mp4');
 \local_seavanmedia\event\media_accessed::create(['context'=>$ctx,'other'=>['filekey'=>$key,'action'=>'open']])->trigger();
 echo html_writer::start_div('sam-layout');
 echo html_writer::start_div('sam-main');
@@ -49,7 +51,7 @@ echo html_writer::tag('h2',s($f['title']),['class'=>'sam-title']);
 echo html_writer::tag('p',s($f['group']),['class'=>'sam-muted sam-group']);
 if(in_array($f['kind'],['video','audio'],true)){
     $attrs=['id'=>'sam-player','src'=>local_seavanmedia_url($id,$key)->out(false),'controls'=>true,'preload'=>'metadata',
-        'data-position'=>(string)(($p && $p->percent<95)?$p->position:0),'data-ranges'=>$p->rangesjson??'[]','data-endpoint'=>(new moodle_url('/local/seavanmedia/progress.php'))->out(false),
+        'data-position'=>(string)max(0,optional_param('at',($p && $p->percent<95)?$p->position:0,PARAM_FLOAT)),'data-ranges'=>$p->rangesjson??'[]','data-endpoint'=>(new moodle_url('/local/seavanmedia/progress.php'))->out(false),
         'data-course'=>$id,'data-file'=>$key,'data-sesskey'=>sesskey(),'playsinline'=>true];
     $attrs['class']='video-js vjs-big-play-centered';
     $attrs['data-kind']=$f['kind'];
@@ -58,7 +60,8 @@ if(in_array($f['kind'],['video','audio'],true)){
     $attrs['data-mime']=$f['mime'];
     $attrs['data-language-url']=(new moodle_url('/media/player/videojs/videojs/lang/fa.json'))->out(false);
     unset($attrs['src']);
-    $sources=html_writer::empty_tag('source',['src'=>local_seavanmedia_url($id,$key)->out(false),'type'=>$f['mime']]);
+    if($f['kind']==='video'&&is_file(sam_asset_dir($id,$key).'/cover.jpg')){$attrs['poster']=sam_asset_url($id,$key,'cover')->out(false);}
+    $sources=html_writer::empty_tag('source',['src'=>($converted?sam_asset_url($id,$key,'converted'):local_seavanmedia_url($id,$key))->out(false),'type'=>$converted?'video/mp4':$f['mime']]);
     // Match WebVTT sidecars by exact stem and optional language suffix.
     $stem=pathinfo($f['name'],PATHINFO_FILENAME);
     foreach($files as $subtitle){
@@ -96,6 +99,29 @@ $keys=in_array($f['kind'],['video','audio'],true)?array_keys($videos):array_keys
 if($idx>0){echo html_writer::link($goto($keys[$idx-1]),'جلسه قبلی',['class'=>'btn btn-outline-primary']);}
 if($idx<count($keys)-1){echo html_writer::link($goto($keys[$idx+1]),'جلسه بعدی',['class'=>'btn btn-outline-primary','id'=>'sam-next']);}
 echo html_writer::end_div();
+echo html_writer::start_tag('details',['class'=>'sa-advanced sam-extras']);
+echo html_writer::tag('summary','یادداشت شخصی و امکانات بیشتر');
+echo $OUTPUT->single_button(new moodle_url('/local/seavanmedia/personal.php',['id'=>$id,'file'=>$key,'action'=>'favorite','sesskey'=>sesskey()]),get_user_preferences('seavanmedia_fav_'.$id,0)?'حذف از علاقه‌مندی‌ها':'افزودن به علاقه‌مندی‌ها','post');
+echo html_writer::start_tag('form',['method'=>'post','action'=>(new moodle_url('/local/seavanmedia/personal.php'))->out(false),'class'=>'sam-note-form']);
+foreach(['id'=>$id,'file'=>$key,'action'=>'note','sesskey'=>sesskey()] as $n=>$value){echo html_writer::empty_tag('input',['type'=>'hidden','name'=>$n,'value'=>$value]);}
+echo html_writer::empty_tag('input',['type'=>'hidden','id'=>'sam-note-position','name'=>'position','value'=>$note['time']??0]);
+echo html_writer::tag('label','یادداشت شخصی (حداکثر ۴۰۰ نویسه)',['for'=>'sam-note']);
+echo html_writer::tag('textarea',s($note['text']??''),['id'=>'sam-note','name'=>'note','maxlength'=>400,'rows'=>2,'class'=>'form-control']);
+echo html_writer::tag('button','ذخیره در زمان فعلی',['type'=>'submit','class'=>'btn btn-outline-primary mt-2']);
+echo html_writer::end_tag('form');
+if(isset($note['time'])){echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key,'at'=>$note['time']]),'رفتن به نشانک · '.$fmt($note['time']));}
+echo html_writer::div(html_writer::link(new moodle_url('/local/seavanmedia/bundle.php',['id'=>$id,'sesskey'=>sesskey()]),'دانلود کل دوره ZIP').' · '.html_writer::link(new moodle_url('/local/seavanmedia/bundle.php',['id'=>$id,'chapter'=>$f['group'],'sesskey'=>sesskey()]),'دانلود فصل ZIP'),'sam-muted');
+echo html_writer::end_tag('details');
+$transcript=sam_transcript($id,$key);
+if($transcript){
+    echo html_writer::start_tag('details',['class'=>'sa-advanced sam-transcript']);
+    echo html_writer::tag('summary','متن گفتار فیلم');
+    echo html_writer::empty_tag('input',['type'=>'search','id'=>'sam-transcript-filter','class'=>'form-control my-2','placeholder'=>'جست‌وجو در متن فیلم']);
+    foreach($transcript as $segment){
+        echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key,'at'=>$segment['start']]),html_writer::tag('small',$fmt($segment['start'])).' '.s($segment['text']),['class'=>'sam-transcript-row','data-text'=>$segment['text']]);
+    }
+    echo html_writer::end_tag('details');
+}
 echo html_writer::end_div();
 echo html_writer::start_div('sam-side');
 echo html_writer::tag('h3','جلسات دوره');
@@ -111,7 +137,8 @@ foreach($groups as $name=>$items){
     foreach($items as $item){
         $r=$history[$item['key']]??null;
         $state=$item['kind']==='pdf'?'PDF':(!in_array($item['kind'],['video','audio'],true)?strtoupper(pathinfo($item['name'],PATHINFO_EXTENSION)):($r?($r->percent>=95?'✓':$digits($r->percent).'٪'):'▷'));
-        $label=html_writer::tag('span',s($item['title'])).html_writer::tag('small',$state);
+        $m=sam_metadata($id,$item['key']);
+        $label=html_writer::tag('span',s($item['title']).(!empty($m['duration'])?html_writer::tag('small',' · '.$fmt($m['duration'])):'' )).html_writer::tag('small',$state);
         echo html_writer::link($goto($item['key']),$label,['class'=>'sam-lesson'.($key===$item['key']?' active':''),'data-title'=>$item['title'].' '.$item['group'],'data-state'=>!in_array($item['kind'],['video','audio'],true)?'docs':(($r->percent??0)>=95?'done':(($r->percent??0)>0?'started':'unseen')),'aria-current'=>$key===$item['key']?'page':'false']);
     }
     echo html_writer::end_tag('details');
