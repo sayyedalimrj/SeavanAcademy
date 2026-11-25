@@ -30,5 +30,8 @@ Moodle GPLv3+، https://github.com/moodle/moodle — فایل‌های مجوز 
 - `moodle/local/seavan/`: صفحه واقعی آکادمی، دوره‌های اختصاص‌یافته، جست‌وجو، پیشرفت بر مبنای تکمیل فعالیت و میانبرهای مدیریتی متناسب با مجوز کاربر.
 - مشاهده دوره: از امکانات اصلی Moodle استفاده می‌شود. ثبت پیشرفت فعالیت معادل زمان واقعی تماشای فیلم نیست.
 - برای فونت ایران‌سنس وب، نسخه دارای مجوز شرکت را با نام‌های `IRANSansWeb.woff2` و `IRANSansWeb_Bold.woff2` در مسیر محلی `moodle/theme/seavan/fonts/` قرار دهید؛ فایل‌ها در گیت نادیده گرفته می‌شوند. سپس START.cmd را اجرا و کش قالب را پاک کنید. در نبود فایل، فونت نصب‌شده یا Tahoma جایگزین می‌شود.
-- پیش‌نمایش رابط در `preview/index.html` با داده‌های کاملاً نمونه است؛ احراز هویت، پخش و مدیریت واقعی از سرور Moodle انجام می‌شود.
-- پیش‌نمایش GitHub Pages: در Settings > Pages > Source گزینه GitHub Actions را فعال کنید و workflow مربوط به Preview را اجرا کنید. هیچ داده واقعی در پیش‌نمایش قرار ندهید.
+- پیش‌نمایش واقعی با GitHub Codespaces اجرا می‌شود، نه HTML شبیه‌سازی‌شده.
+- GitHub Pages صرفاً راهنمای راه‌اندازی است و خود Moodle را اجرا نمی‌کند.
+
+## اجرای واقعی روی GitHub Codespaces
+[ایجاد Codespace](https://github.com/codespaces/new?hide_repo_select=true&repo=1471423154&ref=main). پس از تکمیل postCreateCommand، پورت 8080 را در تب Ports باز کنید (Private). نام کاربری admin و رمز اولیه در فایل .env محلی است. اگر اجرا نشد، در ترمینال `bash .devcontainer/start-moodle.sh` را اجرا کنید. Codespaces سهمیه و هزینه احتمالی دارد؛ بعد از تست متوقفش کنید. داده واقعی شرکت را در آن وارد نکنید.
