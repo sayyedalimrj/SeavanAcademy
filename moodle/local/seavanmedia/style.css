@@ -1,2 +1,42 @@
-.sam{max-width:1450px;margin:auto;color:#173559}.sam-top,.sam-tools{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin:1rem 0}.sam-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,340px);gap:1.3rem;align-items:start}.sam-main,.sam-side{border:1px solid #dbe3ee;border-radius:16px;background:#fff;padding:1.2rem;min-width:0}.sam-title{font-size:1.25rem;line-height:1.9;font-weight:700}.sam-muted{color:#53677f;font-size:.85rem;line-height:1.9;margin:.5rem 0}.sam video{width:100%;aspect-ratio:16/9;background:#101c2d;border-radius:12px;display:block}.sam audio{width:100%}.sam-pdf{width:100%;height:70vh;border:1px solid #dbe3ee;border-radius:10px}.sam-side{max-height:85vh;overflow:auto;position:sticky;top:80px}.sam-side h3{font-size:1.05rem;font-weight:700}.sam-bar{width:100%;height:8px;accent-color:#173559}.sam-chapter{border-bottom:1px solid #dbe3ee;padding:.45rem 0}.sam-chapter summary{font-weight:700;cursor:pointer;font-size:.88rem;padding:.6rem 0}.sam-lesson{display:flex;gap:.6rem;justify-content:space-between;align-items:center;padding:.65rem .6rem;color:#173559;border-radius:8px;font-size:.82rem;line-height:1.7;text-decoration:none}.sam-lesson small{flex:none;color:#53677f}.sam-lesson.active{background:#edf3fa;border-inline-start:3px solid #fcaf17;font-weight:700}.sam-lesson:hover{background:#f1f5fa}.sam-lesson[hidden],.sam-chapter[hidden]{display:none!important}.sam-tools label{display:flex;gap:.4rem;align-items:center;margin:0}.sam-tools select{width:auto}.sam .btn{font-size:.83rem}.sam #sam-percent{color:#173559}@media(max-width:850px){.sam-layout{grid-template-columns:1fr}.sam-side{max-height:60vh;position:static}.sam-main,.sam-side{padding:.85rem}}
-.sam-watched-track{height:7px;background:#e4ebf4;position:relative;overflow:hidden;border-radius:6px;direction:ltr;margin:.6rem 0}.sam-watched-track span{position:absolute;top:0;bottom:0;background:#fcaf17}.sam-side .custom-select{width:100%;font-size:.82rem}.sam-lesson[data-state="done"] small{color:#177245;font-weight:700}.sam-lesson[data-state="started"] small{color:#986300;font-weight:700}
+/* Media workspace */
+.sam{max-width:1390px;margin:auto;color:#203249}
+.sam-coursehead{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 16px;margin:0 0 20px}
+.sam-crumb{font-size:.76rem;color:#627287;grid-column:1}
+.sam-course-title{font-size:clamp(1.25rem,2.4vw,1.65rem);font-weight:700;margin:0;line-height:1.75;grid-column:1}
+.sam-extra{font-size:.8rem;color:#627287;grid-column:2;grid-row:1/3;text-decoration:underline}
+.sam-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,330px);gap:18px;align-items:start}
+.sam-main,.sam-side{background:white;border:1px solid #dce4ee;border-radius:13px;min-width:0}
+.sam-main{padding:18px}
+.sam-side{padding:16px;max-height:calc(100vh - 110px);overflow:auto;position:sticky;top:88px;scrollbar-width:thin}
+.sam-title{font-size:1.12rem;font-weight:700;line-height:1.85;margin:0;overflow-wrap:anywhere}
+.sam-muted{font-size:.8rem;color:#627287;line-height:1.9;margin:7px 0}
+.sam-group{margin-bottom:14px}
+.sam video{width:100%;aspect-ratio:16/9;background:#101c2d;border-radius:9px;display:block;object-fit:contain}
+.sam audio{width:100%}
+.sam-pdf{width:100%;height:70vh;border:1px solid #dce4ee;border-radius:8px}
+.sam-tools{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:12px 0}
+.sam-tools label{display:flex;align-items:center;gap:6px;margin:0;font-size:.8rem}
+.sam-tools select{width:auto;min-width:75px}
+.sam .btn{font-size:.8rem;border-radius:8px}
+.sam-playtools .btn{border-color:#dce4ee;color:#173559;background:#f8fafc}
+.sam-filetools{border-top:1px solid #e7edf4;padding-top:14px;margin-bottom:0}
+.sam-filetools .btn-primary{background:#fcaf17;border-color:#fcaf17;color:#173559}
+.sam-autonext{display:flex;gap:6px;align-items:center}
+.sam-watched-track{height:6px;background:#e4ebf4;position:relative;overflow:hidden;border-radius:5px;direction:ltr;margin:7px 0}
+.sam-watched-track span{position:absolute;top:0;bottom:0;background:#fcaf17}
+.sam #sam-percent{color:#173559}
+.sam-side h3{font-size:1rem;font-weight:700;margin:0}
+.sam-bar{width:100%;height:6px;accent-color:#173559;display:block;margin:6px 0 14px}
+.sam-side .form-control,.sam-side .custom-select{width:100%;font-size:.81rem}
+.sam-chapter{border-bottom:1px solid #e3eaf2;padding:5px 0}
+.sam-chapter:last-child{border-bottom:0}
+.sam-chapter summary{padding:9px 5px;font-size:.86rem;font-weight:700;cursor:pointer;overflow-wrap:anywhere}
+.sam-lesson{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:9px 8px;border-radius:7px;color:#203249;font-size:.8rem;line-height:1.8;text-decoration:none}
+.sam-lesson span{min-width:0;overflow-wrap:anywhere}
+.sam-lesson small{flex:none;color:#627287;font-size:.73rem}
+.sam-lesson.active{background:#edf3fa;border-inline-start:3px solid #fcaf17;font-weight:700}
+.sam-lesson:hover{background:#f3f6fa;text-decoration:none}
+.sam-lesson[data-state="done"] small{color:#187144;font-weight:700}
+.sam-lesson[data-state="started"] small{color:#8b600c;font-weight:700}
+.sam-lesson[hidden],.sam-chapter[hidden]{display:none!important}
+@media(max-width:850px){.sam-layout{grid-template-columns:1fr}.sam-side{position:static;max-height:65vh}.sam-main,.sam-side{padding:12px}.sam-coursehead{display:block}.sam-extra{display:inline-block;margin-top:4px}.sam-tools{gap:5px}}
