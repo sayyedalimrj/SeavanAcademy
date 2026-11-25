@@ -11,6 +11,9 @@ $CFG->dbpass = getenv('DB_PASSWORD');
 $CFG->prefix = 'mdl_';
 $CFG->dboptions = ['dbpersist' => 0, 'dbport' => 3306, 'dbsocket' => '', 'dbcollation' => 'utf8mb4_unicode_ci'];
 $CFG->wwwroot = getenv('SITE_URL');
+if (getenv('SSL_PROXY') === '1') {
+    $CFG->sslproxy = true;
+}
 $CFG->dataroot = '/var/moodledata';
 $CFG->admin = 'admin';
 $CFG->directorypermissions = 02770;
