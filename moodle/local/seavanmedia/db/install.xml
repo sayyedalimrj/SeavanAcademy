@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/seavanmedia/db" VERSION="20261125" COMMENT="Seavan media progress">
+  <TABLES>
+    <TABLE NAME="local_seavanmedia_progress" COMMENT="Per-user media playback history">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="filekey" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="position" TYPE="number" LENGTH="12" DECIMALS="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="duration" TYPE="number" LENGTH="12" DECIMALS="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="rangesjson" TYPE="text" NOTNULL="true"/>
+        <FIELD NAME="percent" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userfk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="coursefk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="usercoursefile" UNIQUE="true" FIELDS="userid,courseid,filekey"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
