@@ -11,6 +11,7 @@ on:
       - 'moodle/local/seavan/**'
       - 'moodle/local/seavanmedia/**'
       - 'tests/media-smoke.py'
+      - 'tests/player-browser.py'
       - 'docker/**'
       - 'Dockerfile'
       - 'compose.yaml'
@@ -57,6 +58,8 @@ jobs:
           cp "courses/CI Media Course/Chapter 1/01 - Sample.mp4" "courses/CI Collection/Other Course/فصل ۲/۲ - Example.mp4"
           cp "courses/CI Media Course/Chapter 1/01 - Sample.mp4" "courses/CI Collection/Other Course/فصل ۱۰/۱۰ - Example.mp4"
           cp "courses/CI Media Course/Chapter 1/01 - Sample.mp4" "courses/CI ignored/hidden.mp4"
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=navy:s=320x180:r=10 -t 20 -c:v libvpx -an "courses/CI Media Course/Chapter 1/02 - Browser.webm"
+          printf 'WEBVTT\n\n00:00:00.000 --> 00:00:05.000\nSample subtitle\n' > "courses/CI Media Course/Chapter 1/02 - Browser.en.vtt"
           find courses -type f -exec touch -d '5 minutes ago' {} +
           touch -d '5 minutes ago' "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
           docker compose up -d --build
@@ -101,6 +104,12 @@ jobs:
           docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
           docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
           python3 tests/media-smoke.py
+      - name: Test real browser video playback
+        run: |
+          python3 -m venv /tmp/seavan-browser
+          /tmp/seavan-browser/bin/pip install playwright==1.51.0
+          /tmp/seavan-browser/bin/python -m playwright install --with-deps chromium
+          /tmp/seavan-browser/bin/python tests/player-browser.py
       - name: Clean test environment
         if: always()
         run: |
