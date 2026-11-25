@@ -145,3 +145,28 @@ body { background:#f4f7fb; color:#173559; }
  .pagelayout-login .seavan-login-story p { font-size:.84rem; }
  .pagelayout-login .seavan-login-wrapper { margin:.6rem auto; max-width:480px; }
 }
+
+/* Native Academy workspace, v0.6 */
+.seavan-workspace #page.drawers .main-inner{max-width:1320px;padding:0 26px 32px}
+.seavan-workspace .seavan-shell{max-width:1240px;padding:12px 0 24px}
+.seavan-workspace .seavan-nav{background:white;padding:7px;border:1px solid #dbe3ee;border-radius:12px;gap:5px;margin-bottom:20px}
+.seavan-workspace .seavan-nav a{border:0;background:transparent;color:#53677f;font-size:.9rem}
+.seavan-workspace .seavan-nav a[aria-current="page"]{background:#173559;color:white}
+.seavan-workspace .seavan-hero{min-height:190px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;border-radius:20px;padding:25px 32px;margin-bottom:20px}
+.seavan-eyebrow{display:block;font-size:.76rem;font-weight:700;letter-spacing:.035em;color:#7b590e;margin-bottom:.45rem}
+.seavan-hero .seavan-eyebrow{color:#fcaf17}
+.seavan-resume{display:flex;align-items:center;gap:22px;background:white;border:1px solid #dbe3ee;border-inline-start:4px solid #fcaf17;border-radius:15px;padding:20px 24px;margin:0 0 26px;box-shadow:0 5px 20px #17355908}
+.seavan-resume-copy{flex:1;min-width:0}
+.seavan-resume h3{font-size:1.1rem;line-height:1.8;margin:0;overflow-wrap:anywhere}
+.seavan-resume progress{max-width:380px}
+.seavan-resume .btn{white-space:nowrap;background:#fcaf17;border-color:#fcaf17;color:#173559}
+.seavan-workspace .seavan-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:18px}
+.seavan-workspace .seavan-course{border-radius:16px;box-shadow:0 4px 15px #17355906;padding:12px;gap:9px}
+.seavan-workspace .seavan-course h3{min-height:3.4em;font-size:1rem;line-height:1.7}
+.seavan-workspace .seavan-course-cover{min-height:128px}
+.seavan-workspace .seavan-search{background:white;padding:10px;border-radius:12px;border:1px solid #dbe3ee;margin-bottom:20px}
+.seavan-workspace .seavan-search .form-control{max-width:none}
+.seavan-workspace .seavan-section{font-size:1.2rem;margin:22px 0 14px}
+.seavan-workspace .seavan-action{min-height:90px;box-shadow:0 3px 12px #17355906}
+.seavan-workspace .seavan-empty{padding:2.4rem;text-align:center}
+@media(max-width:767px){.seavan-workspace #page.drawers .main-inner{padding:0 12px 20px}.seavan-workspace .seavan-hero{min-height:0;padding:20px}.seavan-resume{flex-direction:column;align-items:stretch;padding:16px;gap:12px}.seavan-workspace .seavan-nav{gap:2px}.seavan-workspace .seavan-nav a{font-size:.78rem;padding:.5rem .65rem}.seavan-workspace .seavan-course h3{min-height:0}}
