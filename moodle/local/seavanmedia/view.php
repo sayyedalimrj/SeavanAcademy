@@ -27,7 +27,7 @@ $PAGE->set_context($ctx);$PAGE->set_course($course);
 $PAGE->set_url(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key]));
 $PAGE->set_pagelayout(($CFG->theme ?? '') === 'seavan' ? 'seavanworkspace' : 'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title(format_string($course->fullname));$PAGE->set_heading(format_string($course->fullname));
 $PAGE->requires->css('/local/seavanmedia/style.css');
-$PAGE->requires->js('/local/seavanmedia/player.js');
+$PAGE->requires->js_call_amd('local_seavanmedia/player','init');
 $goto=fn($k)=>new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$k]);
 $digits=fn($n)=>strtr((string)$n,['0'=>'۰','1'=>'۱','2'=>'۲','3'=>'۳','4'=>'۴','5'=>'۵','6'=>'۶','7'=>'۷','8'=>'۸','9'=>'۹']);
 $fmt=fn($s)=>gmdate($s>=3600?'H:i:s':'i:s',(int)$s);
@@ -36,9 +36,9 @@ $done=count(array_filter($videos,fn($f)=>($history[$f['key']]->percent??0)>=95))
 echo $OUTPUT->header();
 echo html_writer::start_div('sam');
 echo html_writer::start_div('sam-coursehead');
-echo html_writer::div(html_writer::link(new moodle_url('/course/index.php'),'کتابخانه').' / آموزش','sam-crumb');
+echo html_writer::div(html_writer::link(new moodle_url('/course/index.php'),'بازگشت به کتابخانه'),'sam-crumb');
 echo html_writer::tag('h1',format_string($course->fullname),['class'=>'sam-course-title']);
-echo html_writer::link(new moodle_url('/course/view.php',['id'=>$id,'classic'=>1]),'سایر امکانات دوره',['class'=>'sam-extra']);
+
 echo html_writer::end_div();
 if(!$files){echo html_writer::div('فایل‌های این دوره هنوز در مسیر سرور در دسترس نیستند.','alert alert-info');echo html_writer::end_div();echo $OUTPUT->footer();exit;}
 $f=$files[$key];$p=$history[$key]??null;$meta=sam_metadata($id,$key);
@@ -50,8 +50,7 @@ $useLow=$low&&$quality==='low';
 \local_seavanmedia\event\media_accessed::create(['context'=>$ctx,'other'=>['filekey'=>$key,'action'=>'open']])->trigger();
 echo html_writer::start_div('sam-layout');
 echo html_writer::start_div('sam-main');
-echo html_writer::tag('h2',s($f['title']),['class'=>'sam-title']);
-echo html_writer::tag('p',s($f['group']),['class'=>'sam-muted sam-group']);
+
 if(in_array($f['kind'],['video','audio'],true)){
     $attrs=['id'=>'sam-player','src'=>local_seavanmedia_url($id,$key)->out(false),'controls'=>true,'preload'=>'metadata',
         'data-position'=>(string)max(0,optional_param('at',($p && $p->percent<95)?$p->position:0,PARAM_FLOAT)),'data-ranges'=>$p->rangesjson??'[]','data-endpoint'=>(new moodle_url('/local/seavanmedia/progress.php'))->out(false),
@@ -102,6 +101,8 @@ if(in_array($f['kind'],['video','audio'],true)){
 }elseif($f['kind']==='pdf'){
     echo html_writer::tag('iframe','',['src'=>local_seavanmedia_url($id,$key)->out(false),'class'=>'sam-pdf','title'=>s($f['title']),'loading'=>'lazy']);
 }else{echo html_writer::div('این فایل برای دانلود آماده است.','sam-muted');}
+echo html_writer::tag('h2',s($f['title']),['class'=>'sam-title sam-after-player']);
+echo html_writer::tag('p',s($f['group']),['class'=>'sam-muted sam-group']);
 echo html_writer::start_div('sam-tools sam-filetools');
 if(sam_download_allowed($id)){echo html_writer::link(local_seavanmedia_url($id,$key,true),'دانلود فایل · '.round($f['size']/1048576,1).' MB',['class'=>'btn btn-primary']);}
 $keys=in_array($f['kind'],['video','audio'],true)?array_keys($videos):array_keys($files);$idx=array_search($key,$keys,true);
@@ -109,7 +110,8 @@ if($idx>0){echo html_writer::link($goto($keys[$idx-1]),'جلسه قبلی',['cla
 if($idx<count($keys)-1){echo html_writer::link($goto($keys[$idx+1]),'جلسه بعدی',['class'=>'btn btn-outline-primary','id'=>'sam-next']);}
 echo html_writer::end_div();
 echo html_writer::start_tag('details',['class'=>'sa-advanced sam-extras']);
-echo html_writer::tag('summary','یادداشت شخصی و امکانات بیشتر');
+echo html_writer::tag('summary','امکانات جلسه');
+echo html_writer::link(new moodle_url('/course/view.php',['id'=>$id,'classic'=>1]),'صفحه کامل دوره',['class'=>'sam-extra']);
 if(in_array($f['kind'],['video','audio'],true)){
     echo html_writer::tag('label',html_writer::empty_tag('input',['type'=>'checkbox','id'=>'sam-autonext']).' رفتن خودکار به جلسه بعدی',['class'=>'sam-muted sam-autonext']);
     echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key,'native'=>$native?0:1]),$native?'پلیر حرفه‌ای':'در صورت مشکل: پلیر ساده',['class'=>'sam-muted']);
