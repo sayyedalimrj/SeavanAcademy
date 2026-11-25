@@ -88,8 +88,7 @@ if(in_array($f['kind'],['video','audio'],true)){
     echo html_writer::div('بخش‌های مشاهده‌شده: '.html_writer::tag('strong',$digits($p->percent??0).'٪',['id'=>'sam-percent']).' — '.html_writer::tag('span','ذخیره خودکار',['id'=>'sam-state','role'=>'status']),'sam-muted');
     echo html_writer::div('', 'sam-watched-track',['id'=>'sam-watched-track','role'=>'img','aria-label'=>'بازه‌های مشاهده‌شده فیلم']);
 
-    echo html_writer::tag('label',html_writer::empty_tag('input',['type'=>'checkbox','id'=>'sam-autonext']).' رفتن خودکار به جلسه بعدی',['class'=>'sam-muted sam-autonext']);
-    echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key,'native'=>$native?0:1]),$native?'پلیر حرفه‌ای':'در صورت مشکل: پلیر ساده',['class'=>'sam-muted']);
+
 }elseif($f['kind']==='pdf'){
     echo html_writer::tag('iframe','',['src'=>local_seavanmedia_url($id,$key)->out(false),'class'=>'sam-pdf','title'=>s($f['title']),'loading'=>'lazy']);
 }else{echo html_writer::div('این فایل برای دانلود آماده است.','sam-muted');}
@@ -101,6 +100,10 @@ if($idx<count($keys)-1){echo html_writer::link($goto($keys[$idx+1]),'جلسه ب
 echo html_writer::end_div();
 echo html_writer::start_tag('details',['class'=>'sa-advanced sam-extras']);
 echo html_writer::tag('summary','یادداشت شخصی و امکانات بیشتر');
+if(in_array($f['kind'],['video','audio'],true)){
+    echo html_writer::tag('label',html_writer::empty_tag('input',['type'=>'checkbox','id'=>'sam-autonext']).' رفتن خودکار به جلسه بعدی',['class'=>'sam-muted sam-autonext']);
+    echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key,'native'=>$native?0:1]),$native?'پلیر حرفه‌ای':'در صورت مشکل: پلیر ساده',['class'=>'sam-muted']);
+}
 echo $OUTPUT->single_button(new moodle_url('/local/seavanmedia/personal.php',['id'=>$id,'file'=>$key,'action'=>'favorite','sesskey'=>sesskey()]),get_user_preferences('seavanmedia_fav_'.$id,0)?'حذف از علاقه‌مندی‌ها':'افزودن به علاقه‌مندی‌ها','post');
 echo html_writer::start_tag('form',['method'=>'post','action'=>(new moodle_url('/local/seavanmedia/personal.php'))->out(false),'class'=>'sam-note-form']);
 foreach(['id'=>$id,'file'=>$key,'action'=>'note','sesskey'=>sesskey()] as $n=>$value){echo html_writer::empty_tag('input',['type'=>'hidden','name'=>$n,'value'=>$value]);}
