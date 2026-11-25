@@ -19,6 +19,15 @@ if (getenv('SSL_PROXY') === '1') {
         throw new RuntimeException('SSL_PROXY requires a valid HTTPS SITE_URL');
     }
     $CFG->sslproxy = true;
+    $CFG->cookiesecure = true;
+    $CFG->cookiehttponly = true;
+    // Use an isolated host-only session cookie for forwarded Codespaces previews.
+    // Never disable login tokens or accept untrusted forwarded host headers.
+    if (str_ends_with($origin['host'], '.app.github.dev') || str_ends_with($origin['host'], '.preview.test')) {
+        $CFG->sessioncookie = 'SeavanPreviewV2';
+        $CFG->sessioncookiedomain = '';
+        $CFG->sessioncookiepath = '/';
+    }
     if (PHP_SAPI !== 'cli') {
         $_SERVER['HTTP_HOST'] = $origin['host'] . (isset($origin['port']) ? ':' . $origin['port'] : '');
         $_SERVER['SERVER_NAME'] = $origin['host'];
