@@ -13,18 +13,18 @@
             <nav class="sa-main-nav" aria-label="منوی اصلی">
                 {{#links}}<a href="{{url}}" {{#active}}aria-current="page"{{/active}}>{{text}}</a>{{/links}}
             </nav>
-            <button type="button" id="sa-dark" class="sa-dark-toggle" aria-label="تغییر حالت روشن یا تاریک" aria-pressed="false">◐</button>
+            <div class="sa-header-tools"><button type="button" id="sa-dark" class="sa-dark-toggle" aria-label="تغییر حالت روشن یا تاریک" aria-pressed="false">◐</button>
             <div id="usernavigation" class="sa-account usermenu-container" data-region="usermenu">
                 {{{ output.navbar_plugin_output }}}
                 {{#usermenu}}{{> core/user_menu }}{{/usermenu}}
-            </div>
+            </div></div>
         </div>
     </header>
     <div id="page" data-region="mainpage" class="sa-page">
         <div id="topofscroll" class="sa-content">
             <div id="page-content">
                 <div id="region-main-box">
-                    <main id="region-main" aria-label="محتوای آکادمی">
+                    <main id="region-main" class="sa-main" aria-label="محتوای آکادمی">
                         {{{ output.course_content_header }}}
                         {{{ output.main_content }}}
                         {{{ output.course_content_footer }}}
