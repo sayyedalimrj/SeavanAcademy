@@ -25,7 +25,7 @@ if(!$key){
 $ctx=context_course::instance($id);
 $PAGE->set_context($ctx);$PAGE->set_course($course);
 $PAGE->set_url(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key]));
-$PAGE->set_pagelayout('seavanworkspace');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title(format_string($course->fullname));$PAGE->set_heading(format_string($course->fullname));
+$PAGE->set_pagelayout(($CFG->theme ?? '') === 'seavan' ? 'seavanworkspace' : 'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title(format_string($course->fullname));$PAGE->set_heading(format_string($course->fullname));
 $PAGE->requires->css('/local/seavanmedia/style.css');
 $PAGE->requires->js('/local/seavanmedia/player.js');
 $goto=fn($k)=>new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$k]);
