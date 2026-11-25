@@ -17,3 +17,7 @@
 # Local learning content, never commit company course files.
 /courses/*
 !/courses/.gitkeep
+
+/courses2/
+/courses3/
+/diagnostics/
