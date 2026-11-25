@@ -1,0 +1,54 @@
+name: Import Moodle and smoke test
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/import-moodle.yml'
+permissions:
+  contents: write
+concurrency:
+  group: moodle-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import verified official source
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f moodle/version.php ]; then
+            curl --fail --location --retry 3 https://download.moodle.org/download.php/direct/stable405/moodle-4.5.16.tgz -o /tmp/moodle.tgz
+            echo '44b77196f6a7a73ad15a329d5669a7fbd9624b6b58b132e4e69ffebc7dcc2031  /tmp/moodle.tgz' | sha256sum -c -
+            mkdir -p moodle
+            tar -xzf /tmp/moodle.tgz --strip-components=1 -C moodle
+            test -f moodle/version.php
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -f moodle/
+            git commit -m 'Vendor official Moodle 4.5.16 source (GPL)'
+            git push origin HEAD:main
+          fi
+      - name: Build and initialize test site
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'BIND_IP=127.0.0.1\nSITE_URL=http://127.0.0.1:8080\nADMIN_EMAIL=admin@example.invalid\nADMIN_PASSWORD=Aa1!%s\nDB_PASSWORD=%s\nDB_ROOT_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
+          docker compose up -d --build
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/login/index.php -o /tmp/login.html; then
+              grep -q 'lang="fa"' /tmp/login.html
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+      - name: Clean test environment
+        if: always()
+        run: |
+          docker compose ps -a || true
+          docker compose logs --tail=80 init web || true
+          docker compose down -v || true
+          rm -f .env
