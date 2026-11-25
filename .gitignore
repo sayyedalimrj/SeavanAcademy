@@ -13,3 +13,7 @@
 
 # Locally licensed fonts must never enter the public repository.
 /moodle/theme/seavan/fonts/*
+
+# Local learning content, never commit company course files.
+/courses/*
+!/courses/.gitkeep
