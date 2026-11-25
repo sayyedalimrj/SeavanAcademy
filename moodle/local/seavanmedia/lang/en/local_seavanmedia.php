@@ -12,3 +12,6 @@ $string['privacy:metadata:rangesjson'] = 'Watched intervals reported by player';
 $string['privacy:metadata:percent'] = 'Estimated unique watched percentage';
 $string['privacy:metadata:timemodified'] = 'Last update';
 $string['eventmediaaccessed'] = 'Media opened or downloaded';
+
+$string['privacy:metadata:favorite']='User favorite courses';
+$string['privacy:metadata:note']='Personal lesson note and bookmark';
