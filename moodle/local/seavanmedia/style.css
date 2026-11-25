@@ -62,3 +62,5 @@
 }
 
 .sam-timepreview{position:absolute;bottom:18px;transform:translateX(-50%);pointer-events:none;background:#101c2d;border:2px solid white;width:120px;border-radius:5px;z-index:30}.sam-timepreview img{display:block;width:100%;height:auto}.sam-timepreview[hidden]{display:none!important}.sam-quality{font-size:.8rem;margin:8px 0}.sam-quality select{width:auto;max-width:100%;font-size:.8rem}
+
+.sam-after-player{margin-top:16px}.sam-main{padding:0;background:transparent;border:0}.sam-layout{grid-template-columns:minmax(0,1fr) minmax(280px,340px);gap:22px}.sam-side{top:84px}.sam-extras .sam-extra{display:block;margin:10px 0}.sam-player-wrap .vjs-control-bar{background:rgba(12,22,35,.9)}.sam-filetools{border-top:0;padding-top:0}.sam-title{font-size:1.2rem}.sam-lesson{font-size:.86rem}.sam-chapter summary{font-size:.9rem}@media(max-width:850px){.sam-layout{grid-template-columns:minmax(0,1fr);gap:16px}.sam-side{position:static;max-height:none}.sam-title{font-size:1rem}.sam-after-player{margin-top:12px}.sam-player-wrap{border-radius:8px}.sam-side{margin-top:4px}}
