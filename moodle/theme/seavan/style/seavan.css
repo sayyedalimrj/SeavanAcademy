@@ -218,3 +218,5 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,su
 @media(max-width:540px){.sa-subnav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.sa-subnav a{font-size:.79rem;padding:9px 7px;text-align:center}.sa-metrics{gap:7px}.sa-metric{padding:10px 8px}.sa-metric strong{font-size:1.2rem}.sa-metric span{font-size:.72rem}.sa-form-panel{padding:16px}.sa-main th,.sa-main td{padding:9px}}
 
 .sa-native-return{align-items:center;padding:8px 12px;border-radius:8px;color:#173559;background:#edf2f8;font-weight:600;font-size:.85rem;text-decoration:none!important}
+
+.seavan-login-story h1{color:white;font-size:1.6rem;line-height:1.7;font-weight:700;margin:10px 0}@media(max-width:800px){.seavan-login-story h1{font-size:1.25rem;margin:8px 0}}
