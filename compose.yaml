@@ -70,7 +70,7 @@ services:
     mem_limit: 2g
     restart: unless-stopped
     user: www-data
-    entrypoint: ["/bin/sh","-c","while true; do php /var/www/html/local/seavanmedia/cli/media.php --action=convertqueue; sleep 30; done"]
+    entrypoint: ["/bin/sh","-c","while true; do php /var/www/html/local/seavanmedia/cli/media.php --action=convertqueue; php /var/www/html/local/seavanmedia/cli/media.php --action=qualityqueue; php /var/www/html/local/seavanmedia/cli/media.php --action=previewqueue; php /var/www/html/local/seavanmedia/cli/media.php --action=hashqueue; sleep 30; done"]
     depends_on:
       init:
         condition: service_completed_successfully
