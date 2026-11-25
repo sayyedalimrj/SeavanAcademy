@@ -65,7 +65,7 @@ echo html_writer::tag('h3','شناسه و نسخه فایل‌ها',['class'=>'m
 echo html_writer::tag('p','قبل از تغییر نام پوشه، شناسه ثابت آن را در فایل .seavan-id قرار دهید. برای تغییر نام یک فایل بدون تغییر محتوا، شناسه قبلی را در .seavan-aliases.json ثبت کنید. نسخه جدید محتوای متفاوت باید شناسه جدا داشته باشد؛ فایل قبلی را نگه دارید.');
 $id=optional_param('course',0,PARAM_INT);
 echo html_writer::start_tag('form',['method'=>'get','action'=>$url->out(false)]);
-echo html_writer::select([0=>'انتخاب دوره']+array_map(fn($c)=>$c->fullname,$courses),'course',$id,false,['class'=>'custom-select']);
+echo html_writer::select([0=>'انتخاب دوره']+array_map(fn($c)=>s($c->fullname),$courses),'course',$id,false,['class'=>'custom-select']);
 echo html_writer::tag('button','نمایش شناسه‌ها',['class'=>'btn btn-outline-primary']);echo html_writer::end_tag('form');
 if($id&&isset($courses[$id])){
     echo $OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['action'=>'hashall','id'=>$id,'sesskey'=>sesskey()]),'بررسی هش همه فایل‌های این دوره','post');
