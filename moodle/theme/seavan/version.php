@@ -2,7 +2,7 @@
 // Moodle extension, GPL v3 or later.
 defined('MOODLE_INTERNAL') || die();
 $plugin->component = 'theme_seavan';
-$plugin->version = 2026112506;
+$plugin->version = 2026112507;
 $plugin->requires = 2024100700;
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.0.0-rc3';
+$plugin->release = '1.0.0-rc4';
