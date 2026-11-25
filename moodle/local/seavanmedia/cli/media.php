@@ -5,7 +5,7 @@ require_once(__DIR__.'/../lib.php');require_once(__DIR__.'/../assets.php');
 require_once($CFG->libdir.'/clilib.php');
 [$opts,$unknown]=cli_get_params(['action'=>'probe','course'=>0,'file'=>'','limit'=>12],[]);
 if($unknown){cli_error('Unknown options');}
-if(in_array($opts['action'],['convertqueue','transcribequeue'],true)){sam_queue_run(str_replace('queue','',$opts['action']));exit;}
+if(in_array($opts['action'],['convertqueue','transcribequeue','hashqueue','qualityqueue','previewqueue'],true)){sam_queue_run(str_replace('queue','',$opts['action']));exit;}
 if($opts['action']==='probe'){cli_writeln('Prepared '.sam_prepare(max(1,min(100,(int)$opts['limit']))).' files');exit;}
 $id=(int)$opts['course'];$course=get_course($id);
 $f=local_seavanmedia_get_file($course,$opts['file']);
