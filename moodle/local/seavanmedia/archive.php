@@ -39,8 +39,9 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     }else{throw new moodle_exception('invalidrequest');}
     redirect($url,'تنظیم یا درخواست ثبت شد.');
 }
-$PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_title('مدیریت آرشیو');$PAGE->set_heading('مدیریت آرشیو');
+$PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_pagelayout(($CFG->theme??'')==='seavan'?'seavanworkspace':'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title('مدیریت آرشیو');$PAGE->set_heading('مدیریت آرشیو');
 echo $OUTPUT->header();
+echo html_writer::div(html_writer::link(new moodle_url('/local/seavan/index.php',['view'=>'manage']),'مدیریت ← بازگشت'),'sa-admin-back');
 echo html_writer::tag('h2','مدیریت آرشیو و دسترسی');
 $choices=[0=>'دوره جدید'];$courses=$DB->get_records_select('course',$DB->sql_like('idnumber',':prefix'),['prefix'=>'seavanmedia:%'],'fullname','id,fullname,idnumber');
 $table=new html_table();$table->head=['دوره','آرشیو','شناسه ثابت','دانلود','ویرایش اطلاعات'];
