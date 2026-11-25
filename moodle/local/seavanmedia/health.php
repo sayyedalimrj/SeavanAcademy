@@ -43,7 +43,8 @@ echo html_writer::start_tag('form',['method'=>'get','action'=>$PAGE->url->out(fa
 echo html_writer::empty_tag('input',['name'=>'q','value'=>$q,'placeholder'=>'نام فیلم یا دوره','class'=>'form-control']);echo html_writer::tag('button','جست‌وجو',['class'=>'btn btn-outline-primary']);echo html_writer::end_tag('form');
 $n=0;foreach($media as [$c,$f,$state]){
     if($q===''||core_text::strpos(local_seavanmedia_normalize(core_text::strtolower($c->fullname.' '.$f['name'])),local_seavanmedia_normalize(core_text::strtolower($q)))===false){continue;}
-    $dir=sam_asset_dir($c->id,$f['key']);$result=is_file($dir.'/transcript.json')?'آماده':(is_file($dir.'/transcribe.job.json')?'در صف':'آماده ثبت درخواست');
+    $dir=sam_asset_dir($c->id,$f['key']);$last=is_readable($dir.'/transcribe.result.json')?json_decode(file_get_contents($dir.'/transcribe.result.json'),true):[];
+    $result=is_file($dir.'/transcript.json')?'آماده':(is_file($dir.'/transcribe.job.json')?'در صف':(($last['status']??'')==='error'?'خطا؛ سرویس یا فایل را بررسی کنید':'آماده ثبت درخواست'));
     echo html_writer::div(html_writer::tag('span',s($f['name']).' — '.$result).$OUTPUT->single_button(new moodle_url('/local/seavanmedia/health.php',['id'=>$c->id,'file'=>$f['key'],'job'=>'transcribe','sesskey'=>sesskey()]),'تولید متن','post'),'card p-2 my-2');
     if(++$n>=40){break;}
 }
