@@ -29,12 +29,12 @@ echo html_writer::start_div('seavan-shell');
 echo html_writer::tag('h1','ورود خودکار دوره‌ها',['class'=>'seavan-section']);
 echo html_writer::tag('p','پوشه را روی هارد سرور کپی کنید؛ نام پوشه عنوان دوره و زیرپوشه‌ها فصل‌های آموزش هستند. بررسی خودکار هر ۵ دقیقه انجام می‌شود.',['class'=>'seavan-note']);
 echo $OUTPUT->single_button(new moodle_url('/local/seavanmedia/sync.php',['action'=>'sync','sesskey'=>sesskey()]),'بررسی پوشه‌ها همین حالا','post');
-foreach($result as $line){echo html_writer::tag('p',s($line));}
+if($result){echo html_writer::start_tag('details',['class'=>'sa-advanced','open'=>'open']);echo html_writer::tag('summary','نتیجه آخرین بررسی');foreach($result as $line){echo html_writer::tag('p',s($line));}echo html_writer::end_tag('details');}
 $mode=get_config('local_seavanmedia','newcourseaccess')==='self'?'self':'manual';
 echo html_writer::start_tag('form',['method'=>'post','action'=>$url->out(false),'class'=>'card p-3 my-3']);
 echo html_writer::empty_tag('input',['type'=>'hidden','name'=>'sesskey','value'=>sesskey()]);
 echo html_writer::empty_tag('input',['type'=>'hidden','name'=>'action','value'=>'settings']);
-echo html_writer::tag('h3','دسترسی دوره‌های جدید');
+echo html_writer::tag('h3','دسترسی دوره‌های جدید',['class'=>'sa-form-heading']);
 echo html_writer::select(['manual'=>'فقط افراد اختصاص‌یافته توسط مدیر','self'=>'ثبت‌نام آزاد همکاران دارای حساب (بدون رمز دوره)'],'access',$mode,false,['class'=>'custom-select','aria-label'=>'نوع دسترسی']);
 echo html_writer::tag('p','تنظیم فقط برای دوره‌هایی است که از این پس ساخته می‌شوند. ثبت‌نام آزاد نیازمند فعال بودن افزونه خودثبت‌نام Moodle است.',['class'=>'text-muted mt-2']);
 echo html_writer::tag('button','ذخیره تنظیم',['class'=>'btn btn-primary','type'=>'submit']);
@@ -51,7 +51,7 @@ foreach($folders as $idnumber=>$folder){
         $name=s(basename($folder));
         $status=$course?($course->visible?'ثبت‌شده':'پنهان‌شده'):'در انتظار ثبت';
         $link=$course?html_writer::link(new moodle_url('/course/view.php',['id'=>$course->id]),'صفحه دوره'):'—';
-        $rows.=html_writer::tag('tr',html_writer::tag('td',$name).html_writer::tag('td',count($files)).html_writer::tag('td',$status).html_writer::tag('td',$link));
+        $rows.=html_writer::tag('tr',html_writer::tag('td',$name).html_writer::tag('td',count($files)).html_writer::tag('td',html_writer::tag('span',$status,['class'=>'sa-status '.($course?'sa-ok':'sa-warn')])).html_writer::tag('td',$link));
     }catch(\Throwable $e){$rows.=html_writer::tag('tr',html_writer::tag('td',s(basename($folder))).html_writer::tag('td','—').html_writer::tag('td','خطا در خواندن').html_writer::tag('td','—'));}
 }
 if($rows){echo html_writer::div(html_writer::tag('table',html_writer::tag('thead',html_writer::tag('tr',html_writer::tag('th','پوشه').html_writer::tag('th','فایل قابل استفاده').html_writer::tag('th','وضعیت').html_writer::tag('th','دوره'))).html_writer::tag('tbody',$rows),['class'=>'table table-hover']),'table-responsive');}
