@@ -49,3 +49,14 @@
 @media(max-width:850px){.sam-layout{grid-template-columns:1fr}.sam-side{position:static;max-height:65vh}.sam-main,.sam-side{padding:12px}.sam-coursehead{display:block}.sam-extra{display:inline-block;margin-top:4px}.sam-tools{gap:5px}}
 
 .sam-playtools [hidden]{display:none!important}
+
+.sam-note-form{margin:12px 0}.sam-note-form label{display:block;font-size:.85rem}.sam-transcript-row{display:block;padding:8px 4px;border-bottom:1px solid #e3eaf2;font-size:.82rem;line-height:1.9}.sam-transcript-row[hidden]{display:none!important}.sam-transcript-row small{color:#627287;display:inline-block;min-width:52px;direction:ltr}.sam-transcript{max-height:480px;overflow:auto}.sam-extras .singlebutton{margin:10px 0}
+@media(max-width:600px){
+ .sam-coursehead{margin-bottom:10px}.sam-course-title{font-size:1.05rem}
+ .sam-extra{font-size:.72rem}.sam-layout{gap:10px}.sam-main{padding:0;border:0;background:transparent}
+ .sam-player-wrap{border-radius:8px}.sam-title{font-size:1rem;margin:0 0 2px}.sam-group{margin:0 0 8px}
+ .sam-filetools{padding:10px 0;border-top:0;gap:5px}.sam-filetools .btn{flex:1 1 auto;min-height:42px}
+ .sam-side{max-height:none;padding:12px}.sam-lesson{min-height:44px}.sam-chapter summary{min-height:42px}
+ .sam-playtools .btn{min-height:42px}.sam-player-wrap .vjs-control-bar{font-size:1.05em}
+ .sam-extras,.sam-transcript{margin:8px 0}.sam-watched-track{height:4px}
+}
