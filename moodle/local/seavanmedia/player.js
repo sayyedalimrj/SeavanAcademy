@@ -45,12 +45,12 @@ async function save(force){
   const r=await fetch(config.endpoint,{method:'POST',body:data,credentials:'same-origin'});
   if(!r.ok)throw new Error('save');
   const j=await r.json();if(typeof j.percent!=='number')throw new Error('response');
-  pct.textContent=fa(j.percent)+'٪';status.textContent='ذخیره شد';last=Date.now();if(Array.isArray(j.ranges)){known=j.ranges;draw();}const active=document.querySelector('.sam-lesson.active');if(active){active.dataset.state=j.percent>=95?'done':j.percent>0?'started':'unseen';const small=active.querySelector('small');if(small)small.textContent=j.percent>=95?'✓':fa(j.percent)+'٪';}
+  pct.textContent=fa(j.percent)+'٪';status.textContent='ذخیره شد';last=Date.now();if(Array.isArray(j.ranges)){known=j.ranges;draw();}const active=document.querySelector('.sam-lesson.active');if(active){active.dataset.state=j.percent>=95?'done':j.percent>0?'started':'unseen';const small=active.lastElementChild;if(small)small.textContent=j.percent>=95?'✓':fa(j.percent)+'٪';}
  }catch(e){dirty=true;status.textContent='ذخیره ناموفق؛ تلاش مجدد';}
  finally{saving=false;if(pending){pending=false;dirty=true;setTimeout(()=>save(false),300);}}
 }
 let restored=false;
-function restore(){if(restored||!Number.isFinite(v.duration)||v.duration<=0)return;restored=true;let pos=Number(config.position);if(pos>2&&pos<v.duration-2){v.currentTime=pos;}draw();}
+function restore(){if(restored||!Number.isFinite(v.duration)||v.duration<=0)return;restored=true;let pos=Number(config.position);if(pos>0&&pos<v.duration){v.currentTime=pos;}draw();}
 v.addEventListener('loadedmetadata',restore);if(v.readyState>=1)restore();
 v.addEventListener('timeupdate',()=>{if(!v.paused){dirty=true;if(Date.now()-last>12000)save(false);}});
 v.addEventListener('pause',()=>save(true));v.addEventListener('ended',async()=>{await save(true);if(auto?.checked&&document.getElementById('sam-next')){flush();window.location.assign(document.getElementById('sam-next').href);}});
