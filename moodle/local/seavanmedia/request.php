@@ -17,7 +17,7 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     set_user_preference('seavanmedia_lastrequest',time());
     redirect(new moodle_url('/course/index.php'),'درخواست به مدیر ارسال شد.');
 }
-$PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_title('درخواست آموزش');$PAGE->set_heading('درخواست آموزش');
+$PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_pagelayout(($CFG->theme??'')==='seavan'?'seavanworkspace':'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title('درخواست آموزش');$PAGE->set_heading('درخواست آموزش');
 echo $OUTPUT->header();echo html_writer::tag('h2','چه آموزشی نیاز دارید؟');
 echo html_writer::start_tag('form',['method'=>'post','action'=>$url->out(false)]);
 echo html_writer::empty_tag('input',['type'=>'hidden','name'=>'sesskey','value'=>sesskey()]);
