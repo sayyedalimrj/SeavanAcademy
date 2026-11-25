@@ -35,19 +35,4 @@ if($Action -eq 'https'){
     Write-Host 'HTTPS started. Install only this server root CA on authorized clients after verifying its fingerprint.'
     exit
 }
-$source=(Resolve-Path (Read-Host 'Snapshot directory')).Path
-$commit=(Get-Content (Join-Path $source 'source-commit.txt') -Raw).Trim()
-if($commit -notmatch '^[a-f0-9]{40}$'){throw 'Invalid snapshot source commit'}
-& git cat-file -e "$commit^{commit}"
-if($LASTEXITCODE -ne 0){throw 'Snapshot commit is unavailable locally'}
-if((& git status --porcelain --untracked-files=no)){throw 'Tracked files are modified; commit or stash them before rollback.'}
-Write-Host 'Restore must use snapshot data AND corresponding source. The current install will be backed up first.'
-if((Read-Host 'Type ROLLBACK to confirm') -ne 'ROLLBACK'){exit}
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'manage.ps1') -Action backup
-if($LASTEXITCODE -ne 0){throw 'Backup failed'}
-# Preserve current restoration script outside repo; switch source only after backup.
-$restore=Join-Path $PSScriptRoot 'manage.ps1'
-& git switch --detach $commit
-if($LASTEXITCODE -ne 0){throw 'Switch failed'}
-D build web
-Write-Host "Source switched to $commit. Run RESTORE.cmd and select the snapshot. Do not start the old source against a newer database."
+& (Join-Path $PSScriptRoot 'manage.ps1') -Action rollback
