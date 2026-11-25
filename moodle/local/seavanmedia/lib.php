@@ -159,6 +159,21 @@ function local_seavanmedia_category_for_folder($basecat, string $folder) {
     }
     return $parent;
 }
+function sam_record_revision(int $id,array $files): void {
+    global $CFG;
+    require_once(__DIR__.'/assets.php');
+    $dir=$CFG->dataroot.'/seavan-revisions/'.$id;
+    if(!is_dir($dir)&&!mkdir($dir,0770,true)&&!is_dir($dir)){return;}
+    $manifest=[];
+    foreach($files as $f){$manifest[$f['key']]=['path'=>$f['rel'],'size'=>$f['size'],'fingerprint'=>$f['fingerprint']??$f['key']];}
+    ksort($manifest);
+    $hash=hash('sha256',json_encode($manifest,JSON_INVALID_UTF8_SUBSTITUTE));
+    $last=is_readable($dir.'/latest.json')?json_decode(file_get_contents($dir.'/latest.json'),true):[];
+    if(($last['hash']??'')===$hash){return;}
+    $record=['time'=>time(),'hash'=>$hash,'files'=>$manifest];
+    sam_write_json($dir.'/'.time().'-'.substr($hash,0,12).'.json',$record);
+    sam_write_json($dir.'/latest.json',$record);
+}
 function local_seavanmedia_sync(): array {
     global $CFG,$DB;
     require_once($CFG->dirroot.'/course/lib.php');
@@ -213,6 +228,7 @@ function local_seavanmedia_sync(): array {
                         'externalurl'=>(new moodle_url('/local/seavanmedia/view.php',['id'=>$course->id]))->out(false),
                         'display'=>RESOURCELIB_DISPLAY_OPEN,'groupmode'=>0,'completion'=>0],$course);
                 }
+                sam_record_revision($course->id,$files);
                 if($created){set_config('lastnewcourse',time(),'local_seavanmedia');}
                 $result[] = ($created?'ایجاد: ':'به‌روز: ').$course->fullname.' — '.count($files).' فایل';
             } catch (\Throwable $e) {
