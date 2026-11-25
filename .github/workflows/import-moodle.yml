@@ -13,7 +13,7 @@ permissions:
   contents: write
 concurrency:
   group: moodle-import
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   import:
     runs-on: ubuntu-latest
@@ -51,12 +51,31 @@ jobs:
               docker compose exec -T web php -l /var/www/html/local/seavan/index.php
               docker compose exec -T web php -l /var/www/html/theme/seavan/config.php
               curl -fsSL http://127.0.0.1:8080/local/seavan/index.php -o /tmp/academy-login.html
-              grep -q 'lang="fa"' /tmp/academy-login.html
-              exit 0
+              grep -q 'lang="fa' /tmp/academy-login.html
+              break
             fi
             sleep 5
           done
-          exit 1
+          grep -q 'lang="fa' /tmp/login.html
+          docker compose exec -T web sh -c 'find /var/www/html/theme/seavan /var/www/html/local/seavan -name "*.php" -exec php -l {} \;'
+          python3 - <<'PY'
+          import urllib.request, urllib.parse, http.cookiejar, re, html
+          env = dict(line.strip().split('=', 1) for line in open('.env') if '=' in line)
+          base = 'http://127.0.0.1:8080'
+          opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+          def get(path):
+              return opener.open(base + path, timeout=90).read().decode('utf-8')
+          login = get('/login/index.php')
+          token = re.search(r'name="logintoken"[^>]*value="([^"]+)"', login)
+          assert token, 'No login token in Moodle'
+          body = urllib.parse.urlencode({'username':'admin','password':env['ADMIN_PASSWORD'],'logintoken':html.unescape(token.group(1))}).encode()
+          opener.open(base + '/login/index.php', body, timeout=90).read()
+          for view, expected in [('home','seavan-hero'),('mine','seavan-grid'),('catalog','seavan-grid'),('manage','seavan-actions')]:
+              page = get('/local/seavan/index.php?view=' + view)
+              assert expected in page, 'Academy route failed: ' + view
+              assert 'seavan-login-story' not in page, 'Login failed'
+          print('Authenticated Academy routes passed.')
+          PY
       - name: Clean test environment
         if: always()
         run: |
