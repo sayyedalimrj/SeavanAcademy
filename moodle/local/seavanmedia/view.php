@@ -139,21 +139,23 @@ if($transcript){
 }
 echo html_writer::end_div();
 echo html_writer::start_div('sam-side');
-echo html_writer::tag('h3','جلسات دوره');
-echo html_writer::tag('p',$digits($done).' از '.$digits(count($videos)).' جلسه دیده‌شده',['class'=>'sam-muted']);
-echo html_writer::tag('progress','',['value'=>$done,'max'=>max(1,count($videos)),'class'=>'sam-bar']);
+echo html_writer::start_div('sam-side-header');
+echo html_writer::tag('h3','محتوای دوره');
+echo html_writer::tag('span',$digits($done).' از '.$digits(count($videos)).' جلسه دیده‌شده',['class'=>'sam-muted']);
+echo html_writer::tag('progress','',['value'=>$done,'max'=>max(1,count($videos)),'class'=>'sam-bar','aria-label'=>'پیشرفت دوره']);
+echo html_writer::end_div();
 echo html_writer::empty_tag('input',['id'=>'sam-filter','type'=>'search','class'=>'form-control','placeholder'=>'جست‌وجو در جلسات...','aria-label'=>'جست‌وجوی جلسات']);
-echo html_writer::select(['all'=>'همه فایل‌ها','unseen'=>'جلسات مشاهده‌نشده','started'=>'جلسات در حال مشاهده','done'=>'جلسات مشاهده‌شده','docs'=>'جزوه و پیوست'],'lessonstate','all',false,['id'=>'sam-lessonstate','class'=>'custom-select mt-2','aria-label'=>'فیلتر وضعیت جلسات']);
+echo html_writer::select(['all'=>'همه جلسات و فایل‌ها','unseen'=>'جلسات مشاهده‌نشده','started'=>'جلسات در حال مشاهده','done'=>'جلسات مشاهده‌شده','docs'=>'جزوه و پیوست'],'lessonstate','all',false,['id'=>'sam-lessonstate','class'=>'custom-select mt-2','aria-label'=>'فیلتر وضعیت جلسات']);
 $groups=[];foreach($files as $item){$groups[$item['group']][]=$item;}
 foreach($groups as $name=>$items){
     $active=in_array($key,array_column($items,'key'),true);
     echo html_writer::start_tag('details',['class'=>'sam-chapter']+($active?['open'=>'open']:[]));
-    echo html_writer::tag('summary',s($name).' · '.$digits(count($items)));
+    echo html_writer::tag('summary',html_writer::tag('span',s($name)).html_writer::tag('small',$digits(count($items)).' فایل',['class'=>'sam-chapter-count']));
     foreach($items as $item){
         $r=$history[$item['key']]??null;
         $state=$item['kind']==='pdf'?'PDF':(!in_array($item['kind'],['video','audio'],true)?strtoupper(pathinfo($item['name'],PATHINFO_EXTENSION)):($r?($r->percent>=95?'✓':$digits($r->percent).'٪'):'▷'));
         $m=sam_metadata($id,$item['key']);
-        $label=html_writer::tag('span',s($item['title']).(!empty($m['duration'])?html_writer::tag('small',' · '.$fmt($m['duration'])):'' )).html_writer::tag('small',$state);
+        $label=html_writer::tag('span',s($item['title']).(!empty($m['duration'])?html_writer::tag('small',$fmt($m['duration']),['class'=>'sam-duration']):'' ),['class'=>'sam-lesson-copy']).html_writer::tag('small',$state,['class'=>'sam-lesson-status']);
         echo html_writer::link($goto($item['key']),$label,['class'=>'sam-lesson'.($key===$item['key']?' active':''),'data-title'=>$item['title'].' '.$item['group'],'data-state'=>!in_array($item['kind'],['video','audio'],true)?'docs':(($r->percent??0)>=95?'done':(($r->percent??0)>0?'started':'unseen')),'aria-current'=>$key===$item['key']?'page':'false']);
     }
     echo html_writer::end_tag('details');
