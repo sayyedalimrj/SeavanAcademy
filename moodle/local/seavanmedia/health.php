@@ -29,13 +29,14 @@ foreach(local_seavanmedia_folders() as $number=>$folder){
     $pending+=$counts['pending'];
     $rows[]=[$c->fullname,$counts['ok'],$counts['pending'],$counts['convert'],$counts['error'],round($seconds/3600,1)];
 }
-echo html_writer::tag('p','فایل رسانه‌ای: '.$total.' · در انتظار بررسی: '.$pending.' — بررسی سریع کانتینر و کدک، نه آزمایش کامل تمام فریم‌ها.');
-$table=new html_table();$table->head=['دوره','آماده','در انتظار','نیازمند بررسی کدک','خطای خواندن','ساعت شناسایی‌شده'];foreach($rows as $r){$r[0]=s($r[0]);$table->data[]=$r;}echo html_writer::table($table);
-if($issues){echo html_writer::tag('h2','فایل‌های نیازمند بررسی (حداکثر ۱۰۰ مورد)');
+echo html_writer::div(html_writer::div(html_writer::tag('strong',$total).html_writer::tag('span','کل رسانه‌ها'),'sa-metric').html_writer::div(html_writer::tag('strong',$pending).html_writer::tag('span','در انتظار بررسی'),'sa-metric').html_writer::div(html_writer::tag('strong',array_sum(array_column($rows,3))+array_sum(array_column($rows,4))).html_writer::tag('span','نیازمند بررسی'),'sa-metric'),'sa-metrics');
+echo html_writer::tag('p','بررسی سریع کدک و ظرف فایل؛ نه آزمایش کامل همه فریم‌ها.',['class'=>'seavan-note']);
+$table=new html_table();$table->head=['دوره','آماده','در انتظار','نیازمند بررسی کدک','خطای خواندن','ساعت شناسایی‌شده'];foreach($rows as $r){$r[0]=s($r[0]);$table->data[]=$r;}if($table->data){echo html_writer::div(html_writer::table($table),'table-responsive');}else{echo html_writer::div('هنوز رسانه‌ای شناسایی نشده است.','seavan-empty');}
+if($issues){echo html_writer::start_tag('details',['class'=>'sa-advanced']);echo html_writer::tag('summary','فایل‌های نیازمند بررسی (حداکثر ۱۰۰ مورد)');
 foreach($issues as [$c,$f,$state]){
     $dir=sam_asset_dir($c->id,$f['key']);
     echo html_writer::div(html_writer::tag('strong',s($f['name'])).html_writer::tag('p',s($c->fullname).' — '.($state==='error'?'خطای خواندن':'کدک یا ظرف ناسازگار')).($state==='convert'?$OUTPUT->single_button(new moodle_url('/local/seavanmedia/health.php',['id'=>$c->id,'file'=>$f['key'],'job'=>'convert','sesskey'=>sesskey()]),is_file($dir.'/convert.job.json')?'در صف (ثبت مجدد)':'ساخت نسخه سازگار','post'):''),'card p-3 mb-2');
-}}
+}echo html_writer::end_tag('details');}
 echo html_writer::start_tag('details',['class'=>'sa-advanced']+(optional_param('q','',PARAM_TEXT)!==''?['open'=>'open']:[]));
 echo html_writer::tag('summary','پردازش انتخابی فیلم (Whisper، کیفیت و پیش‌نمایش)');
 echo html_writer::tag('p','برای پردازش، سرویس اختیاری Whisper را راه‌اندازی کنید. فقط فایل انتخابی پردازش می‌شود.');
