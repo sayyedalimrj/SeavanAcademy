@@ -64,3 +64,31 @@
 .sam-timepreview{position:absolute;bottom:18px;transform:translateX(-50%);pointer-events:none;background:#101c2d;border:2px solid white;width:120px;border-radius:5px;z-index:30}.sam-timepreview img{display:block;width:100%;height:auto}.sam-timepreview[hidden]{display:none!important}.sam-quality{font-size:.8rem;margin:8px 0}.sam-quality select{width:auto;max-width:100%;font-size:.8rem}
 
 .sam-after-player{margin-top:16px}.sam-main{padding:0;background:transparent;border:0}.sam-layout{grid-template-columns:minmax(0,1fr) minmax(280px,340px);gap:22px}.sam-side{top:84px}.sam-extras .sam-extra{display:block;margin:10px 0}.sam-player-wrap .vjs-control-bar{background:rgba(12,22,35,.9)}.sam-filetools{border-top:0;padding-top:0}.sam-title{font-size:1.2rem}.sam-lesson{font-size:.86rem}.sam-chapter summary{font-size:.9rem}@media(max-width:850px){.sam-layout{grid-template-columns:minmax(0,1fr);gap:16px}.sam-side{position:static;max-height:none}.sam-title{font-size:1rem}.sam-after-player{margin-top:12px}.sam-player-wrap{border-radius:8px}.sam-side{margin-top:4px}}
+
+/* RC3 lesson hierarchy: player first, readable content list second. */
+.sam-coursehead{margin-bottom:16px;display:block}
+.sam-course-title{font-size:1.35rem}
+.sam-layout{grid-template-columns:minmax(0,1fr) minmax(290px,350px);gap:24px}
+.sam-side{padding:0;overflow:auto;border-radius:15px;background:var(--sa-paper)}
+.sam-side-header{padding:17px 16px 10px;background:var(--sa-soft);border-bottom:1px solid var(--sa-border)}
+.sam-side-header h3{font-size:1.03rem;margin-bottom:4px;color:var(--sa-ink)}
+.sam-side-header .sam-muted{display:block;margin:0}
+.sam-side-header .sam-bar{margin:7px 0 2px;accent-color:#b57b13}
+.sam-side>#sam-filter,.sam-side>#sam-lessonstate{width:calc(100% - 28px);margin:12px 14px 0}
+.sam-side>#sam-lessonstate{margin-bottom:9px}
+.sam-chapter{margin:0 14px;border-bottom:1px solid var(--sa-border);padding:7px 0}
+.sam-chapter summary{font-weight:700;line-height:1.75}
+.sam-chapter-count{float:left;color:var(--sa-muted);font-size:.7rem;font-weight:400;margin-inline-start:7px}
+.sam-lesson{min-height:52px;padding:10px 9px;gap:10px;margin:3px 0}
+.sam-lesson-copy{display:block;flex:1;min-width:0}
+.sam-duration{display:block;font-weight:400;direction:ltr;text-align:right;line-height:1.5}
+.sam-lesson-status{min-width:27px;text-align:center}
+.sam-lesson.active{background:var(--sa-soft);border-inline-start:3px solid #fcaf17}
+.sam-player-wrap{border-radius:13px;box-shadow:0 6px 20px rgba(16,28,45,.10)}
+.sam-filetools{margin:12px 0;gap:8px}
+.sam-filetools .btn{min-height:42px}
+.sam-extras,.sam-transcript{background:var(--sa-paper);border-color:var(--sa-border)}
+.sam-muted{color:var(--sa-muted)}
+.sam-quality{display:flex;justify-content:flex-end}
+@media(max-width:850px){.sam-layout{grid-template-columns:minmax(0,1fr);gap:14px}.sam-side{max-height:none;position:static}.sam-course-title{font-size:1.08rem}.sam-player-wrap{border-radius:10px}.sam-side-header{padding:14px}.sam-chapter{margin:0 12px}}
+@media(max-width:540px){.sam-filetools .btn{flex:1 1 auto}.sam-title{line-height:1.7}.sam-side .sam-lesson{font-size:.86rem}}
