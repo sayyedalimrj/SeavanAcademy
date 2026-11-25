@@ -108,6 +108,13 @@ jobs:
           /tmp/seavan-browser/bin/pip install playwright==1.51.0
           /tmp/seavan-browser/bin/python -m playwright install --with-deps chromium
           /tmp/seavan-browser/bin/python tests/player-browser.py
+      - name: Save UI screenshots for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-ui-screenshots
+          path: ui-screenshots/
+          if-no-files-found: ignore
       - name: Test learner access and concurrent media requests
         run: |
           docker compose exec -T -u www-data web php < tests/security-fixture.php > /tmp/security-fixture.json
