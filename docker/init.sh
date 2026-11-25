@@ -12,6 +12,7 @@ case "$state" in
     ;;
   empty)
     su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/install_database.php --agree-license --lang=fa --fullname="آکادمی سیوان" --shortname="آکادمی سیوان" --adminuser=admin --adminpass="$ADMIN_PASSWORD" --adminemail="$ADMIN_EMAIL"'
+    su -s /bin/sh www-data -c 'php /var/www/html/local/seavan/cli/setup_categories.php'
     ;;
   *) echo "Non-empty incomplete database; inspect before retrying." >&2; exit 1 ;;
 esac
@@ -21,5 +22,12 @@ if ! su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=theme --set=seavan'
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=custommenuitems --set="آکادمی سیوان|$SITE_URL/local/seavan/index.php"'
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=local_seavan --name=brandconfigured --set=1'
+  su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/purge_caches.php'
+fi
+
+# Make the native Academy page the first destination; do not override later admin changes.
+if ! su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=local_seavan --name=homeconfigured --no-eol' >/dev/null 2>&1; then
+  su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=defaulthomepage --set=/local/seavan/index.php'
+  su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=local_seavan --name=homeconfigured --set=1'
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/purge_caches.php'
 fi
