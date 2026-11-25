@@ -27,6 +27,15 @@ if (getenv('SSL_PROXY') === '1') {
         $_SERVER['REQUEST_SCHEME'] = 'https';
     }
 }
+// Docker maps host port 8080 to Apache port 80. Preserve the explicit canonical port
+// only when the request Host matches the configured host and port.
+if (PHP_SAPI !== 'cli' && getenv('SSL_PROXY') !== '1') {
+    $origin = parse_url($CFG->wwwroot);
+    $expected = ($origin['host'] ?? '') . (isset($origin['port']) ? ':' . $origin['port'] : '');
+    if (isset($origin['port']) && strcasecmp($_SERVER['HTTP_HOST'] ?? '', $expected) === 0) {
+        $_SERVER['SERVER_PORT'] = $origin['port'];
+    }
+}
 $CFG->dataroot = '/var/moodledata';
 $CFG->admin = 'admin';
 $CFG->directorypermissions = 02770;
