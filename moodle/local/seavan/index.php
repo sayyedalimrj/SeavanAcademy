@@ -159,7 +159,7 @@ if ($view === 'manage') {
     echo html_writer::tag('h2',$title,['class'=>'seavan-section']);
     echo html_writer::start_tag('form',['method'=>'get','action'=>$url->out(false),'class'=>'seavan-search']);
     echo html_writer::empty_tag('input',['type'=>'hidden','name'=>'view','value'=>$view]);
-    echo html_writer::empty_tag('input',['type'=>'search','name'=>'q','value'=>$query,'placeholder'=>'جست‌وجوی عنوان دوره','aria-label'=>'جست‌وجوی دوره','class'=>'form-control']);
+    echo html_writer::empty_tag('input',['type'=>'search','name'=>'q','value'=>$query,'placeholder'=>$view==='catalog'?'جست‌وجوی دوره، جلسه یا فایل':'جست‌وجوی دوره','aria-label'=>'جست‌وجوی آموزش','class'=>'form-control']);
     $options = [0=>'همه دسته‌بندی‌ها'];
     foreach ($categories as $cat) { $options[$cat->id] = format_string($cat->name,true,['context'=>context_coursecat::instance($cat->id)]); }
     echo html_writer::select($options,'category',$categoryid,false,['class'=>'custom-select','aria-label'=>'دسته‌بندی']);
