@@ -30,4 +30,4 @@ try{
     else{$DB->insert_record('local_seavanmedia_progress',$record);}
 }finally{$lock->release();}
 header('Content-Type: application/json; charset=utf-8');
-echo json_encode(['percent'=>$percent]);
+echo json_encode(['percent'=>$percent,'ranges'=>$merged,'position'=>$record->position]);
