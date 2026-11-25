@@ -79,7 +79,7 @@ $THEME->layouts = [
         'regions' => array('side-pre'),
         'defaultregion' => 'side-pre',
     ),
-    'seavanworkspace' => ['file'=>'drawers.php','regions'=>[],'options'=>['nonavbar'=>true]],
+    'seavanworkspace' => ['theme'=>'seavan','file'=>'workspace.php','regions'=>[],'options'=>['nonavbar'=>true]],
     // My courses page.
     'mycourses' => array(
         'file' => 'drawers.php',
