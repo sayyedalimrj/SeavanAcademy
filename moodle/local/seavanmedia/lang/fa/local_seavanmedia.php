@@ -15,3 +15,6 @@ $string['eventmediaaccessed'] = 'باز کردن یا دانلود فایل آم
 
 $string['privacy:metadata:favorite']='دوره‌های موردعلاقه کاربر';
 $string['privacy:metadata:note']='یادداشت و نشانک شخصی کاربر';
+
+$string['messageprovider:courserequest']='درخواست آموزش';
+$string['messageprovider:courseassigned']='آموزش اختصاص‌یافته جدید';
