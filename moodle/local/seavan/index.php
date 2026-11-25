@@ -54,7 +54,9 @@ foreach ($courses as $item) {
     }
     $count++;
     echo html_writer::start_div('seavan-course');
-    echo html_writer::tag('span','آموزش سازمانی',['class'=>'seavan-course-label']);
+    $category = core_course_category::get($course->category, IGNORE_MISSING);
+    $categoryname = $category ? format_string($category->name) : 'آموزش سازمانی';
+    echo html_writer::div(html_writer::tag('span', $categoryname) . html_writer::tag('span','▤',['aria-hidden'=>'true','class'=>'seavan-course-symbol']), 'seavan-course-cover');
     echo html_writer::tag('h3', $name);
     $progress = \core_completion\progress::get_course_progress_percentage($course);
     if ($progress !== null) {
