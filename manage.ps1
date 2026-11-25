@@ -1,7 +1,7 @@
 param([ValidateSet('backup','restore','update','whisper')][string]$Action='backup')
 $ErrorActionPreference='Stop'
 Set-Location $PSScriptRoot
-function D { & docker compose @args; if($LASTEXITCODE -ne 0){throw "Docker Compose failed ($LASTEXITCODE)"} }
+function D { $extra=@(); if((Test-Path .env) -and (Test-Path compose.https.yaml) -and (Get-Content .env | Where-Object {$_ -like 'ACADEMY_HOST=*'})){ $extra=@('-f','compose.yaml','-f','compose.https.yaml') }; & docker compose @extra @args; if($LASTEXITCODE -ne 0){throw "Docker Compose failed ($LASTEXITCODE)"} }
 function Cli { D exec -T -u www-data web php /var/www/html/admin/cli/maintenance.php @args }
 function StopWorkers { D --profile whisper stop cron processor whisper }
 function StartWorkers { D up -d --no-build --no-deps cron processor }
@@ -16,8 +16,11 @@ function Backup {
     D run --rm --no-deps -v "$($dest):/backup" --entrypoint sh web -c 'tar -C /var/moodledata --exclude=./cache --exclude=./localcache --exclude=./temp --exclude=./sessions --exclude=./seavan-whisper-model -czf /backup/moodledata.tar.gz .'
     D run --rm --no-deps -v "$($dest):/backup:ro" --entrypoint sh web -c 'gzip -t /backup/database.sql.gz && tar -tzf /backup/moodledata.tar.gz >/dev/null'
     Copy-Item .env (Join-Path $dest 'private.env')
+    $revision=(& git rev-parse HEAD).Trim()
+    if($LASTEXITCODE -ne 0){throw 'Cannot determine source revision'}
+    $revision | Set-Content -Encoding ASCII (Join-Path $dest 'source-commit.txt')
     $hashes=@{}
-    foreach($name in @('database.sql.gz','moodledata.tar.gz','private.env')){
+    foreach($name in @('database.sql.gz','moodledata.tar.gz','private.env','source-commit.txt')){
         $hashes[$name]=(Get-FileHash (Join-Path $dest $name) -Algorithm SHA256).Hash
     }
     $hashes | ConvertTo-Json | Set-Content -Encoding ASCII (Join-Path $dest 'checksums.json')
@@ -38,7 +41,7 @@ if($Action -eq 'update'){
 $source=Read-Host 'Path to snapshot directory (created by BACKUP.cmd)'
 $source=(Resolve-Path $source).Path
 $manifest=Get-Content (Join-Path $source 'checksums.json') -Raw | ConvertFrom-Json
-foreach($name in @('database.sql.gz','moodledata.tar.gz','private.env')){
+foreach($name in @('database.sql.gz','moodledata.tar.gz','private.env','source-commit.txt')){
     $actual=(Get-FileHash (Join-Path $source $name) -Algorithm SHA256).Hash
     if($actual -ne $manifest.$name){throw "Checksum mismatch: $name"}
 }
