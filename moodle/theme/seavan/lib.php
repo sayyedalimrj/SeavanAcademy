@@ -3,7 +3,7 @@ defined('MOODLE_INTERNAL') || die();
 function theme_seavan_pre_scss($theme) {
     return '$primary: #176b60;' . "\n" . '$body-bg: #f4f7f6;' . "\n" .
         '$body-color: #203831;' . "\n" . '$border-radius: .75rem;' . "\n" .
-        '$font-family-sans-serif: SeavanIRANSans, IRANSansWeb, IRANSans, Tahoma, Arial, sans-serif;' . "\n";
+        '$font-family-sans-serif: SeavanIRANSans, IRANSansWeb, IRANSans, SeavanVazirmatn, Tahoma, Arial, sans-serif;' . "\n";
 }
 function theme_seavan_extra_scss($theme) {
     global $CFG;
@@ -21,6 +21,12 @@ function theme_seavan_extra_scss($theme) {
         if ($url) {
             $url = str_replace(["'", "\n", "\r", "\\"], ['%27','','','%5C'], $url);
             $css .= "@font-face {font-family: SeavanIRANSans; src: url('$url'); font-weight:$weight; font-display:swap;}\n";
+        }
+    }
+    foreach (['Vazirmatn-Regular.woff2'=>400,'Vazirmatn-Bold.woff2'=>700] as $file=>$weight) {
+        if (is_readable(__DIR__ . '/fonts/' . $file)) {
+            $url = $CFG->wwwroot . '/theme/seavan/fonts/' . $file;
+            $css .= "@font-face {font-family: SeavanVazirmatn; src: url('$url') format('woff2'); font-weight:$weight; font-display:swap;}\n";
         }
     }
     return $css . file_get_contents(__DIR__ . '/style/seavan.css');
