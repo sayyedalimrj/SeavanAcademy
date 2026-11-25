@@ -55,7 +55,7 @@ if(in_array($f['kind'],['video','audio'],true)){
     $attrs=['id'=>'sam-player','src'=>local_seavanmedia_url($id,$key)->out(false),'controls'=>true,'preload'=>'metadata',
         'data-position'=>(string)max(0,optional_param('at',($p && $p->percent<95)?$p->position:0,PARAM_FLOAT)),'data-ranges'=>$p->rangesjson??'[]','data-endpoint'=>(new moodle_url('/local/seavanmedia/progress.php'))->out(false),
         'data-course'=>$id,'data-file'=>$key,'data-sesskey'=>sesskey(),'playsinline'=>true];
-    $attrs['class']='video-js vjs-big-play-centered';
+    $attrs['class']='sam-native-media';
     $attrs['data-kind']=$f['kind'];
     $native=optional_param('native',0,PARAM_BOOL);
     $attrs['data-native']=$native?'1':'0';
@@ -101,10 +101,10 @@ if(in_array($f['kind'],['video','audio'],true)){
 }elseif($f['kind']==='pdf'){
     echo html_writer::tag('iframe','',['src'=>local_seavanmedia_url($id,$key)->out(false),'class'=>'sam-pdf','title'=>s($f['title']),'loading'=>'lazy']);
 }else{echo html_writer::div('این فایل برای دانلود آماده است.','sam-muted');}
-echo html_writer::tag('h2',s($f['title']),['class'=>'sam-title sam-after-player']);
+echo html_writer::tag('h2',s($f['title']),['class'=>'sam-title sam-after-player','dir'=>'auto']);
 echo html_writer::tag('p',s($f['group']),['class'=>'sam-muted sam-group']);
 echo html_writer::start_div('sam-tools sam-filetools');
-if(sam_download_allowed($id)){echo html_writer::link(local_seavanmedia_url($id,$key,true),'دانلود فایل · '.round($f['size']/1048576,1).' MB',['class'=>'btn btn-primary']);}
+if(sam_download_allowed($id)){echo html_writer::link(local_seavanmedia_url($id,$key,true),'دانلود فایل · '.($f['size']<1048576?max(1,round($f['size']/1024)).' KB':round($f['size']/1048576,1).' MB'),['class'=>'btn btn-primary']);}
 $keys=in_array($f['kind'],['video','audio'],true)?array_keys($videos):array_keys($files);$idx=array_search($key,$keys,true);
 if($idx>0){echo html_writer::link($goto($keys[$idx-1]),'جلسه قبلی',['class'=>'btn btn-outline-primary']);}
 if($idx<count($keys)-1){echo html_writer::link($goto($keys[$idx+1]),'جلسه بعدی',['class'=>'btn btn-outline-primary','id'=>'sam-next']);}
@@ -146,12 +146,13 @@ echo html_writer::tag('progress','',['value'=>$done,'max'=>max(1,count($videos))
 echo html_writer::end_div();
 echo html_writer::empty_tag('input',['id'=>'sam-filter','type'=>'search','class'=>'form-control','placeholder'=>'جست‌وجو در جلسات...','aria-label'=>'جست‌وجوی جلسات']);
 echo html_writer::select(['all'=>'همه جلسات و فایل‌ها','unseen'=>'جلسات مشاهده‌نشده','started'=>'جلسات در حال مشاهده','done'=>'جلسات مشاهده‌شده','docs'=>'جزوه و پیوست'],'lessonstate','all',false,['id'=>'sam-lessonstate','class'=>'custom-select mt-2','aria-label'=>'فیلتر وضعیت جلسات']);
-$groups=[];foreach($files as $item){$groups[$item['group']][]=$item;}
+$groups=[];foreach($files as $item){if(in_array(strtolower(pathinfo($item['name'],PATHINFO_EXTENSION)),['vtt','srt'],true)){continue;}$groups[$item['group']][]=$item;}
 foreach($groups as $name=>$items){
     $active=in_array($key,array_column($items,'key'),true);
     echo html_writer::start_tag('details',['class'=>'sam-chapter']+($active?['open'=>'open']:[]));
     echo html_writer::tag('summary',html_writer::tag('span',s($name)).html_writer::tag('small',$digits(count($items)).' فایل',['class'=>'sam-chapter-count']));
     foreach($items as $item){
+        if(in_array(strtolower(pathinfo($item['name'],PATHINFO_EXTENSION)),['vtt','srt'],true)){continue;}
         $r=$history[$item['key']]??null;
         $state=$item['kind']==='pdf'?'PDF':(!in_array($item['kind'],['video','audio'],true)?strtoupper(pathinfo($item['name'],PATHINFO_EXTENSION)):($r?($r->percent>=95?'✓':$digits($r->percent).'٪'):'▷'));
         $m=sam_metadata($id,$item['key']);
