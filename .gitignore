@@ -1,0 +1,12 @@
+/.env
+/.env.*
+!/\.env.example
+/backups/
+/data/
+/moodle/config.php
+*.sql
+*.sql.gz
+*.mp4
+*.mkv
+*.webm
+*.log

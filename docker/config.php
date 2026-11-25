@@ -1,0 +1,24 @@
+<?php
+unset($CFG);
+global $CFG;
+$CFG = new stdClass();
+$CFG->dbtype = 'mariadb';
+$CFG->dblibrary = 'native';
+$CFG->dbhost = 'db';
+$CFG->dbname = 'moodle';
+$CFG->dbuser = 'moodle';
+$CFG->dbpass = getenv('DB_PASSWORD');
+$CFG->prefix = 'mdl_';
+$CFG->dboptions = ['dbpersist' => 0, 'dbport' => 3306, 'dbsocket' => '', 'dbcollation' => 'utf8mb4_unicode_ci'];
+$CFG->wwwroot = getenv('SITE_URL');
+$CFG->dataroot = '/var/moodledata';
+$CFG->admin = 'admin';
+$CFG->directorypermissions = 02770;
+$CFG->lang = 'fa';
+$CFG->langmenu = 0;
+$CFG->langlist = 'fa';
+$CFG->autolang = 0;
+$CFG->registerauth = '';
+$CFG->forcelogin = 1;
+$CFG->timezone = 'Asia/Tehran';
+require_once(__DIR__ . '/lib/setup.php');

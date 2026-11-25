@@ -1,0 +1,55 @@
+name: seavan-academy
+x-app: &app
+  image: seavan-academy:4.5.16
+  build: .
+  environment:
+    SITE_URL: ${SITE_URL:?Run START.cmd first}
+    DB_PASSWORD: ${DB_PASSWORD:?Run START.cmd first}
+  volumes:
+    - moodledata:/var/moodledata
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: moodle
+      MARIADB_USER: moodle
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Run START.cmd first}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Run START.cmd first}
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  init:
+    <<: *app
+    environment:
+      SITE_URL: ${SITE_URL:?Run START.cmd first}
+      DB_PASSWORD: ${DB_PASSWORD:?Run START.cmd first}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Run START.cmd first}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Run START.cmd first}
+    entrypoint: ["/usr/local/bin/seavan-init"]
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    <<: *app
+    restart: unless-stopped
+    ports:
+      - "${BIND_IP:-127.0.0.1}:8080:80"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+  cron:
+    <<: *app
+    restart: unless-stopped
+    user: www-data
+    entrypoint: ["/bin/sh", "-c", "while true; do php /var/www/html/admin/cli/cron.php; sleep 60; done"]
+    depends_on:
+      init:
+        condition: service_completed_successfully
+volumes:
+  moodledata:
+  dbdata:
