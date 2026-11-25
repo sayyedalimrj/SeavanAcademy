@@ -18,6 +18,7 @@ RUN set -eux; \
  else curl --fail --location --retry 3 https://download.moodle.org/download.php/direct/stable405/moodle-4.5.16.tgz -o /tmp/moodle.tgz; \
  echo '44b77196f6a7a73ad15a329d5669a7fbd9624b6b58b132e4e69ffebc7dcc2031  /tmp/moodle.tgz' | sha256sum -c -; \
  tar -xzf /tmp/moodle.tgz --strip-components=1 -C /var/www/html; rm /tmp/moodle.tgz; fi; \
+ sh /tmp/seavan-build/docker/fetch-fonts.sh /var/www/html/theme/seavan/fonts; \
  cp /tmp/seavan-build/docker/config.php /var/www/html/config.php; \
  mkdir -p /opt/seavan/lang /var/moodledata; \
  curl --fail --location --retry 3 https://packaging.moodle.org/langpack/4.5/fa.zip -o /tmp/fa.zip; \
