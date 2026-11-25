@@ -58,7 +58,7 @@ function local_seavanmedia_scan(string $folder): array {
         $key = hash('sha256',$rel."\0".$file->getSize()."\0".$file->getMTime());
         $group = dirname($rel) === '.' ? 'جلسات دوره' : dirname($rel);
         $title = pathinfo($file->getFilename(),PATHINFO_FILENAME);
-        $kind = in_array($ext,['mp4','webm','m4v','ogv','mov'],true) ? 'video' : ($ext === 'pdf' ? 'pdf' : (in_array($ext,['mp3','m4a','wav','ogg','flac'],true) ? 'audio' : 'download'));
+        $kind = in_array($ext,['mp4','webm','m4v','ogv','mov','mkv','avi','wmv'],true) ? 'video' : ($ext === 'pdf' ? 'pdf' : (in_array($ext,['mp3','m4a','wav','ogg','flac'],true) ? 'audio' : 'download'));
         $out[$key] = ['key'=>$key,'path'=>$path,'name'=>$file->getFilename(),'group'=>$group,'title'=>$title,
             'mime'=>$exts[$ext],'kind'=>$kind,'size'=>$file->getSize(),'rel'=>$rel];
     }
