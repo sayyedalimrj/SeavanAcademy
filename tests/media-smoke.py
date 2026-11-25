@@ -23,9 +23,12 @@ data = urllib.parse.urlencode({'username':'admin','password':env['ADMIN_PASSWORD
 opener.open(base + '/login/index.php', data, timeout=90).read()
 catalog = read('/local/seavan/index.php?view=catalog')
 assert 'CI Media Course' in catalog, 'Folder import did not create course'
-link = re.search(r'href="([^"]*/local/seavanmedia/view\.php\?id=\d+[^"]*)"',catalog)
-assert link, 'Native catalog player link not found'
-viewurl = html.unescape(link.group(1))
+assert 'Other Course' in catalog
+assert 'CI ignored' not in catalog
+assert catalog.count('CI Media Course') == 1
+links = re.findall(r'href="([^"]*/local/seavanmedia/view\.php\?id=\d+[^"]*)"', catalog)
+viewurl = next((html.unescape(x) for x in links if '01 - Sample' in read(html.unescape(x))), None)
+assert viewurl, 'Sample course link not found'
 page = read(viewurl)
 assert 'sam-player' in page and '01 - Sample' in page
 key = attribute(page, 'data-file')
