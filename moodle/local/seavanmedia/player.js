@@ -43,7 +43,7 @@ async function save(force){
   const j=await r.json();if(typeof j.percent!=='number')throw new Error('response');
   pct.textContent=fa(j.percent)+'٪';status.textContent='ذخیره شد';last=Date.now();if(Array.isArray(j.ranges)){known=j.ranges;draw();}const active=document.querySelector('.sam-lesson.active');if(active){active.dataset.state=j.percent>=95?'done':j.percent>0?'started':'unseen';const small=active.querySelector('small');if(small)small.textContent=j.percent>=95?'✓':fa(j.percent)+'٪';}
  }catch(e){dirty=true;status.textContent='ذخیره ناموفق؛ تلاش مجدد';}
- finally{saving=false;if(pending){pending=false;setTimeout(()=>save(false),300);}}
+ finally{saving=false;if(pending){pending=false;dirty=true;setTimeout(()=>save(false),300);}}
 }
 let restored=false;
 function restore(){if(restored||!Number.isFinite(v.duration)||v.duration<=0)return;restored=true;let pos=Number(config.position);if(pos>2&&pos<v.duration-2){v.currentTime=pos;}draw();}
@@ -63,7 +63,7 @@ const playbackError=()=>{status.textContent='پخش این فایل ممکن ن�
 v.addEventListener('error',playbackError);if(player)player.on('error',playbackError);
 const speed=document.getElementById('sam-speed');if(speed){let r=store.get('seavan-media-speed');if(r&&[...speed.options].some(o=>o.value===r))speed.value=r;v.playbackRate=+speed.value;speed.addEventListener('change',()=>{v.playbackRate=+speed.value;});}
 v.addEventListener('ratechange',()=>{store.set('seavan-media-speed',String(v.playbackRate));if(speed&&[...speed.options].some(o=>o.value===String(v.playbackRate)))speed.value=String(v.playbackRate);});
-if(player){const controls=document.getElementById('sam-native-controls');if(controls)controls.hidden=true;}
+if(player){const controls=document.getElementById('sam-native-controls');if(controls){for(const el of controls.children){if(el.id!=='sam-restart')el.hidden=true;}if(!document.getElementById('sam-restart'))controls.hidden=true;}}
 }
 
 // Moodle already ships Video.js and its theme stylesheet. No extra CDN is used.
