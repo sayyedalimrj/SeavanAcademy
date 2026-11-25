@@ -19,11 +19,19 @@ if (!(Test-Path .env)) {
   $email = Read-Host 'Administrator email (Enter = admin@example.invalid)'
   if (!$email) { $email = 'admin@example.invalid' }
   if ($email -notmatch '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$') { throw 'Invalid email.' }
+  $folder = Read-Host 'Course folder (Enter = courses next to START.cmd)'
+  if ($folder) {
+    if (!(Test-Path -LiteralPath $folder -PathType Container)) { throw 'Course folder does not exist.' }
+    $folder = (Resolve-Path -LiteralPath $folder).Path.Replace('\','/')
+    if ($folder.Contains("'") -or $folder.Contains('`n')) { throw 'Unsupported path character.' }
+  }
   $admin = New-Secret
   @("BIND_IP=$ip","SITE_URL=http://${ip}:8080","ADMIN_EMAIL=$email","ADMIN_PASSWORD=$admin","DB_PASSWORD=$(New-Secret)","DB_ROOT_PASSWORD=$(New-Secret)") | Set-Content -Encoding ASCII .env
+  if ($folder) { Add-Content -Encoding UTF8 .env ("COURSES_DIR='" + $folder + "'") }
   Write-Host "Initial administrator: admin / $admin"
   Write-Host 'Keep .env private. Change admin password after login.'
 }
+New-Item -ItemType Directory -Path courses -Force | Out-Null
 docker compose up -d --build
 Check-Exit
 docker compose ps -a
