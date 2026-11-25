@@ -7,5 +7,6 @@ for($i=0;$i -lt 60;$i++){
 }
 if($LASTEXITCODE -ne 0){throw 'Docker Desktop not available'}
 if(!(Test-Path .env)){throw 'Run START.cmd once before autostart'}
-& docker compose start
+$extra=@();if((Test-Path compose.https.yaml) -and (Get-Content .env | Where-Object {$_ -like 'ACADEMY_HOST=*'})){$extra=@('-f','compose.yaml','-f','compose.https.yaml')}
+& docker compose @extra start
 if($LASTEXITCODE -ne 0){throw 'Existing containers could not start; run START.cmd'}
