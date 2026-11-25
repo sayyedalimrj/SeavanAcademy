@@ -12,3 +12,6 @@ $string['privacy:metadata:rangesjson'] = 'بازه‌های مشاهده‌شد�
 $string['privacy:metadata:percent'] = 'درصد تخمینی بخش‌های مشاهده‌شده';
 $string['privacy:metadata:timemodified'] = 'آخرین تغییر';
 $string['eventmediaaccessed'] = 'باز کردن یا دانلود فایل آموزش';
+
+$string['privacy:metadata:favorite']='دوره‌های موردعلاقه کاربر';
+$string['privacy:metadata:note']='یادداشت و نشانک شخصی کاربر';
