@@ -74,6 +74,10 @@ if($id&&isset($courses[$id])){
         $p=sam_asset_dir($id,$key).'/sha256.json';$h=is_file($p)?json_decode(file_get_contents($p),true):[];
         $t->data[]=[s($f['rel']),html_writer::tag('code',s($key)),s($h['hash']??'بررسی نشده'),$OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['action'=>'hash','id'=>$id,'file'=>$key,'sesskey'=>sesskey()]),'محاسبه هش','post')];
     }echo html_writer::div(html_writer::table($t),'table-responsive');
+    echo html_writer::tag('h3','تاریخچه نسخه‌های فهرست دوره');
+    $revisions=glob($CFG->dataroot.'/seavan-revisions/'.$id.'/*-*.json')?:[];rsort($revisions);
+    foreach(array_slice($revisions,0,20) as $path){$v=json_decode(file_get_contents($path),true);if(!$v){continue;}echo html_writer::tag('p',userdate($v['time']).' — '.count($v['files']).' فایل — '.s(substr($v['hash'],0,12)));}
+    echo html_writer::tag('p','این تاریخچه فهرست است؛ نسخه‌های باینری را در هارد یا بکاپ جداگانه نگه دارید.');
 }
 echo html_writer::tag('h3','فایل‌های کاملاً تکراری (هش یکسان)');
 $hashes=[];$unhashed=0;
