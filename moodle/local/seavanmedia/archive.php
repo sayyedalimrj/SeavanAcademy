@@ -30,6 +30,9 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
             str_starts_with($name,'.')||file_exists($folder.'/'.$name)||disk_free_space($root)<$f['size']+1073741824){throw new moodle_exception('invalidrequest');}
         if(!move_uploaded_file($f['tmp_name'],$folder.'/'.$name)){throw new moodle_exception('invalidrequest');}
         touch($folder.'/'.$name,time()-180);
+    }elseif($action==='hashall'){
+        $c=get_course(required_param('id',PARAM_INT));
+        foreach(local_seavanmedia_course_files($c) as $f){$p=sam_asset_dir($c->id,$f['key']).'/sha256.json';if(!is_file($p)){sam_queue($c->id,$f,'hash');}}
     }elseif($action==='hash'){
         $c=get_course(required_param('id',PARAM_INT));$f=local_seavanmedia_get_file($c,required_param('file',PARAM_ALPHANUM));
         sam_queue($c->id,$f,'hash');
@@ -65,10 +68,22 @@ echo html_writer::start_tag('form',['method'=>'get','action'=>$url->out(false)])
 echo html_writer::select([0=>'انتخاب دوره']+array_map(fn($c)=>$c->fullname,$courses),'course',$id,false,['class'=>'custom-select']);
 echo html_writer::tag('button','نمایش شناسه‌ها',['class'=>'btn btn-outline-primary']);echo html_writer::end_tag('form');
 if($id&&isset($courses[$id])){
+    echo $OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['action'=>'hashall','id'=>$id,'sesskey'=>sesskey()]),'بررسی هش همه فایل‌های این دوره','post');
     $t=new html_table();$t->head=['نام نسبی','شناسه','SHA-256','عملیات'];
     foreach(local_seavanmedia_course_files($courses[$id]) as $key=>$f){
         $p=sam_asset_dir($id,$key).'/sha256.json';$h=is_file($p)?json_decode(file_get_contents($p),true):[];
         $t->data[]=[s($f['rel']),html_writer::tag('code',s($key)),s($h['hash']??'بررسی نشده'),$OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['action'=>'hash','id'=>$id,'file'=>$key,'sesskey'=>sesskey()]),'محاسبه هش','post')];
     }echo html_writer::div(html_writer::table($t),'table-responsive');
 }
+echo html_writer::tag('h3','فایل‌های کاملاً تکراری (هش یکسان)');
+$hashes=[];$unhashed=0;
+foreach($courses as $c){
+    foreach(local_seavanmedia_course_files($c) as $f){
+        $p=sam_asset_dir($c->id,$f['key']).'/sha256.json';$h=is_file($p)?json_decode(file_get_contents($p),true):[];
+        if(empty($h['hash'])||($h['fingerprint']??'')!==($f['fingerprint']??$f['key'])){$unhashed++;continue;}
+        $hashes[$h['hash']][]=$c->fullname.' / '.$f['rel'];
+    }
+}
+echo html_writer::tag('p','فایل‌های هنوز بررسی‌نشده: '.$unhashed.'؛ هیچ فایل تکراری خودکار حذف نمی‌شود.');
+foreach($hashes as $hash=>$names){if(count($names)>1){echo html_writer::div(html_writer::tag('strong',count($names).' فایل یکسان').html_writer::alist(array_map('s',$names)),'card p-3 mb-2');}}
 echo $OUTPUT->footer();
