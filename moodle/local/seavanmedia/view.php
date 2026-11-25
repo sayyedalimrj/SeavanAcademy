@@ -57,7 +57,7 @@ if(in_array($f['kind'],['video','audio'],true)){
     echo html_writer::div('بخش‌های مشاهده‌شده: '.html_writer::tag('strong',$digits($p->percent??0).'٪',['id'=>'sam-percent']).' — '.html_writer::tag('span','ذخیره خودکار',['id'=>'sam-state','role'=>'status']),'sam-muted');
     echo html_writer::div('', 'sam-watched-track',['id'=>'sam-watched-track','role'=>'img','aria-label'=>'بازه‌های مشاهده‌شده فیلم']);
     echo html_writer::div('نوار بالا بخش‌های پخش‌شده را نشان می‌دهد. جلو زدن آزاد است.','sam-muted');
-    echo html_writer::tag('label',html_writer::empty_tag('input',['type'=>'checkbox','id'=>'sam-autonext']).' پخش خودکار جلسه بعدی',['class'=>'sam-muted']);
+    echo html_writer::tag('label',html_writer::empty_tag('input',['type'=>'checkbox','id'=>'sam-autonext']).' رفتن خودکار به جلسه بعدی',['class'=>'sam-muted']);
 }elseif($f['kind']==='pdf'){
     echo html_writer::tag('iframe','',['src'=>local_seavanmedia_url($id,$key)->out(false),'class'=>'sam-pdf','title'=>s($f['title']),'loading'=>'lazy']);
 }else{echo html_writer::div('این فایل برای دانلود آماده است.','sam-muted');}
