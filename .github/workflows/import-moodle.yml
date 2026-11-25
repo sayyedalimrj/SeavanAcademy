@@ -90,6 +90,9 @@ jobs:
           for view, expected in [('/my/index.php','seavan-hero'),('/my/courses.php','seavan-grid'),('/course/index.php','seavan-grid'),('/local/seavan/index.php?view=manage','seavan-actions')]:
               page = get(view)
               assert expected in page, 'Academy route failed: ' + view
+              assert page.count('class="sa-main-nav"') == 1, 'Academy must have exactly one primary menu'
+              assert 'class="seavan-nav"' not in page, 'Duplicate menu rendered'
+              assert 'drawer-toggles' not in page, 'Unwanted drawer controls rendered'
               assert 'seavan-login-story' not in page, 'Login failed'
           print('Authenticated Academy routes passed.')
           PY
