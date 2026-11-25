@@ -76,3 +76,40 @@ function sam_convert(int $id,array $f): void {
         rename($tmp,$dir.'/converted.mp4');
     }finally{@unlink($tmp);}
 }
+
+function sam_queue(int $id,array $f,string $action): void {
+    if(!in_array($action,['convert','transcribe'],true)){throw new coding_exception('Invalid job');}
+    $dir=sam_asset_dir($id,$f['key']);
+    if(!is_dir($dir)&&!mkdir($dir,0770,true)&&!is_dir($dir)){throw new RuntimeException('Cannot make job directory');}
+    sam_write_json($dir.'/'.$action.'.job.json',['id'=>$id,'key'=>$f['key'],'queued'=>time()]);
+}
+function sam_queue_run(string $action): void {
+    global $CFG;
+    $lock=\core\lock\lock_config::get_lock_factory('local_seavanmedia')->get_lock('queue-'.$action,0);
+    if(!$lock){return;}
+    try{
+        foreach(glob($CFG->dataroot.'/seavan-assets/*/*/'.$action.'.job.json')?:[] as $p){
+            $j=json_decode(file_get_contents($p),true);
+            if(!is_array($j)){continue;}
+            try{
+                $c=get_course((int)$j['id']);$f=local_seavanmedia_get_file($c,$j['key']);
+                if(sam_asset_dir($c->id,$f['key']).'/'.$action.'.job.json'!==$p){throw new RuntimeException('Invalid job path');}
+                if($action==='convert'){sam_convert($c->id,$f);}
+                else {
+                    [$rc]=sam_process(['/opt/seavan-whisper/bin/python','/opt/seavan-tools/transcribe.py',$f['path'],dirname($p).'/transcript.json'],14400);
+                    if($rc!==0){throw new RuntimeException('Transcription failed');}
+                }
+                sam_write_json(dirname($p).'/'.$action.'.result.json',['status'=>'done','time'=>time()]);
+            }catch(\Throwable $e){
+                sam_write_json(dirname($p).'/'.$action.'.result.json',['status'=>'error','time'=>time()]);
+                mtrace($e->getMessage());
+            }
+            @unlink($p);return;
+        }
+    }finally{$lock->release();}
+}
+function sam_transcript(int $id,string $key): array {
+    $p=sam_asset_dir($id,$key).'/transcript.json';
+    if(!is_readable($p)||filesize($p)>16*1024*1024){return [];}
+    return json_decode(file_get_contents($p),true)?:[];
+}
