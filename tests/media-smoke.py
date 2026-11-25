@@ -21,12 +21,12 @@ token = re.search(r'name="logintoken"[^>]*value="([^"]+)"', login)
 assert token, 'Moodle login token missing'
 data = urllib.parse.urlencode({'username':'admin','password':env['ADMIN_PASSWORD'],'logintoken':html.unescape(token.group(1))}).encode()
 opener.open(base + '/login/index.php', data, timeout=90).read()
-catalog = read('/local/seavan/index.php?view=catalog')
+catalog = read('/course/index.php')
 assert 'CI Media Course' in catalog, 'Folder import did not create course'
 assert 'Other Course' in catalog
 assert 'CI ignored' not in catalog
 assert catalog.count('CI Media Course') == 1
-links = re.findall(r'href="([^"]*/local/seavanmedia/view\.php\?id=\d+[^"]*)"', catalog)
+links = re.findall(r'href="([^"]*/course/view\.php\?id=\d+[^"]*)"', catalog)
 viewurl = next((html.unescape(x) for x in links if '01 - Sample' in read(html.unescape(x))), None)
 assert viewurl, 'Sample course link not found'
 page = read(viewurl)
