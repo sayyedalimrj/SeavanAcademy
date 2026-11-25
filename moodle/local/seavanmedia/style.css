@@ -47,3 +47,5 @@
 .sam-lesson[data-state="started"] small{color:#8b600c;font-weight:700}
 .sam-lesson[hidden],.sam-chapter[hidden]{display:none!important}
 @media(max-width:850px){.sam-layout{grid-template-columns:1fr}.sam-side{position:static;max-height:65vh}.sam-main,.sam-side{padding:12px}.sam-coursehead{display:block}.sam-extra{display:inline-block;margin-top:4px}.sam-tools{gap:5px}}
+
+.sam-playtools [hidden]{display:none!important}
