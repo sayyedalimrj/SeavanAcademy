@@ -5,7 +5,7 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     require_sesskey();$id=required_param('id',PARAM_INT);$course=get_course($id);
     $f=local_seavanmedia_get_file($course,required_param('file',PARAM_ALPHANUM));
     $job=required_param('job',PARAM_ALPHA);
-    if(!in_array($job,['convert','transcribe'],true)){throw new moodle_exception('invalidrequest');}
+    if(!in_array($job,['convert','transcribe','preview','quality'],true)){throw new moodle_exception('invalidrequest');}
     sam_queue($id,$f,$job);
     redirect(new moodle_url('/local/seavanmedia/health.php'), 'در صف پردازش قرار گرفت.');
 }
@@ -36,7 +36,7 @@ foreach($issues as [$c,$f,$state]){
     echo html_writer::div(html_writer::tag('strong',s($f['name'])).html_writer::tag('p',s($c->fullname).' — '.($state==='error'?'خطای خواندن':'کدک یا ظرف ناسازگار')).($state==='convert'?$OUTPUT->single_button(new moodle_url('/local/seavanmedia/health.php',['id'=>$c->id,'file'=>$f['key'],'job'=>'convert','sesskey'=>sesskey()]),is_file($dir.'/convert.job.json')?'در صف (ثبت مجدد)':'ساخت نسخه سازگار','post'):''),'card p-3 mb-2');
 }}
 echo html_writer::start_tag('details',['class'=>'sa-advanced']+(optional_param('q','',PARAM_TEXT)!==''?['open'=>'open']:[]));
-echo html_writer::tag('summary','تبدیل گفتار به متن (Whisper)');
+echo html_writer::tag('summary','پردازش انتخابی فیلم (Whisper، کیفیت و پیش‌نمایش)');
 echo html_writer::tag('p','برای پردازش، سرویس اختیاری Whisper را راه‌اندازی کنید. فقط فایل انتخابی پردازش می‌شود.');
 $q=trim(optional_param('q','',PARAM_TEXT));
 echo html_writer::start_tag('form',['method'=>'get','action'=>$PAGE->url->out(false)]);
@@ -45,7 +45,9 @@ $n=0;foreach($media as [$c,$f,$state]){
     if($q===''||core_text::strpos(local_seavanmedia_normalize(core_text::strtolower($c->fullname.' '.$f['name'])),local_seavanmedia_normalize(core_text::strtolower($q)))===false){continue;}
     $dir=sam_asset_dir($c->id,$f['key']);$last=is_readable($dir.'/transcribe.result.json')?json_decode(file_get_contents($dir.'/transcribe.result.json'),true):[];
     $result=is_file($dir.'/transcript.json')?'آماده':(is_file($dir.'/transcribe.job.json')?'در صف':(($last['status']??'')==='error'?'خطا؛ سرویس یا فایل را بررسی کنید':'آماده ثبت درخواست'));
-    echo html_writer::div(html_writer::tag('span',s($f['name']).' — '.$result).$OUTPUT->single_button(new moodle_url('/local/seavanmedia/health.php',['id'=>$c->id,'file'=>$f['key'],'job'=>'transcribe','sesskey'=>sesskey()]),'تولید متن','post'),'card p-2 my-2');
+    echo html_writer::div(html_writer::tag('span',s($f['name']).' — '.$result).$OUTPUT->single_button(new moodle_url('/local/seavanmedia/health.php',['id'=>$c->id,'file'=>$f['key'],'job'=>'transcribe','sesskey'=>sesskey()]),'تولید متن','post').($f['kind']==='video'?
+    $OUTPUT->single_button(new moodle_url('/local/seavanmedia/health.php',['id'=>$c->id,'file'=>$f['key'],'job'=>'quality','sesskey'=>sesskey()]),'ساخت کیفیت کم‌حجم','post').
+    $OUTPUT->single_button(new moodle_url('/local/seavanmedia/health.php',['id'=>$c->id,'file'=>$f['key'],'job'=>'preview','sesskey'=>sesskey()]),'ساخت پیش‌نمایش نوار زمان','post'):''),'card p-2 my-2');
     if(++$n>=40){break;}
 }
 echo html_writer::end_tag('details');echo html_writer::end_div();echo $OUTPUT->footer();
