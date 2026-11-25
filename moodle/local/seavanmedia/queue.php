@@ -15,8 +15,9 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     }
     redirect($url);
 }
-$PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_title('صف پردازش');$PAGE->set_heading('صف پردازش');
-echo $OUTPUT->header();echo html_writer::tag('h2','صف پردازش رسانه');
+$PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_pagelayout(($CFG->theme??'')==='seavan'?'seavanworkspace':'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title('صف پردازش');$PAGE->set_heading('صف پردازش');
+echo $OUTPUT->header();
+echo html_writer::div(html_writer::link(new moodle_url('/local/seavan/index.php',['view'=>'manage']),'مدیریت ← بازگشت'),'sa-admin-back');echo html_writer::tag('h2','صف پردازش رسانه');
 echo html_writer::tag('p','لغو فقط برای کار در انتظار است؛ توقف پردازش جاری نیازمند توقف سرویس است.');
 $t=new html_table();$t->head=['دوره / شناسه فایل','عملیات','وضعیت','کنترل'];
 $jobs=glob($CFG->dataroot.'/seavan-assets/*/*/*.job.json')?:[];
