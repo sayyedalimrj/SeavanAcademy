@@ -109,6 +109,7 @@ jobs:
           python3 -m venv /tmp/seavan-browser
           /tmp/seavan-browser/bin/pip install playwright==1.51.0
           /tmp/seavan-browser/bin/python -m playwright install --with-deps chromium
+          docker compose exec -T -u www-data web php /var/www/html/admin/cli/cfg.php --name=loginpasswordtoggle --set=1
           /tmp/seavan-browser/bin/python tests/player-browser.py
       - name: Save UI screenshots for review
         if: always()

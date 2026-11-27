@@ -29,6 +29,33 @@
 </body>
 </html>
 {{#js}}
+{{#passwordtoggle}}
+const passwordField = document.querySelector('#login #password');
+if (passwordField) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'sa-login-password-toggle';
+    button.className = 'btn btn-outline-secondary mt-2{{#passwordtogglesmallscreensonly}} d-sm-none{{/passwordtogglesmallscreensonly}}';
+    button.textContent = 'نمایش رمز عبور';
+    button.setAttribute('aria-controls', passwordField.id);
+    button.setAttribute('aria-pressed', 'false');
+    button.addEventListener('click', () => {
+        const visible = passwordField.type === 'password';
+        passwordField.type = visible ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(visible));
+    });
+    passwordField.after(button);
+    {{#passwordtogglesmallscreensonly}}
+    const desktop = window.matchMedia('(min-width: 576px)');
+    desktop.addEventListener('change', event => {
+        if (event.matches) {
+            passwordField.type = 'password';
+            button.setAttribute('aria-pressed', 'false');
+        }
+    });
+    {{/passwordtogglesmallscreensonly}}
+}
+{{/passwordtoggle}}
 M.util.js_pending('theme_boost/loader');
 require(['theme_boost/loader'], function() { M.util.js_complete('theme_boost/loader'); });
 {{/js}}

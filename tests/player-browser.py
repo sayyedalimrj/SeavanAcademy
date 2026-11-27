@@ -14,7 +14,20 @@ with sync_playwright() as p:
     page.goto(base + "/login/index.php", wait_until="domcontentloaded")
     page.screenshot(path=str(shots / "01-login.png"), full_page=True)
     page.locator("#username").fill("admin")
-    page.locator("#password").fill(env["ADMIN_PASSWORD"])
+    password = page.locator("#password")
+    original_input = password.element_handle()
+    password.fill(env["ADMIN_PASSWORD"])
+    toggle = page.locator("#sa-login-password-toggle")
+    toggle.wait_for(state="attached")
+    if not toggle.is_visible():
+        page.set_viewport_size({"width": 390, "height": 844})
+    assert original_input.evaluate("(element) => element === document.querySelector('#password')"), "Login replaced the password input"
+    toggle.click()
+    assert password.get_attribute("type") == "text"
+    toggle.click()
+    assert password.get_attribute("type") == "password"
+    assert password.input_value() == env["ADMIN_PASSWORD"], "Login cleared the password"
+    page.set_viewport_size({"width": 1280, "height": 900})
     try:
         with page.expect_response(lambda response: response.request.method == "POST" and
                                   response.url == base + "/login/index.php", timeout=15000) as submitted:

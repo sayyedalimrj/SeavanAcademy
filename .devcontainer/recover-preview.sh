@@ -21,7 +21,8 @@ d(){ docker compose -p seavan-rc -f compose.preview.yaml "$@"; }
 web_origin="$(d exec -T web printenv SITE_URL 2>/dev/null || true)"
 web_proxy="$(d exec -T web printenv SSL_PROXY 2>/dev/null || true)"
 if [[ "$web_origin" != "$PREVIEW_ORIGIN" || "$web_proxy" != 1 ]] ||
-        ! d exec -T web grep -q SeavanPreviewV2 /var/www/html/config.php; then
+        ! d exec -T web grep -q SeavanPreviewV2 /var/www/html/config.php ||
+        ! d exec -T web test -f /var/www/html/theme/seavan/classes/output/core_renderer.php; then
     # Upgrade only when the running web service lacks the current HTTPS configuration.
     if ! d exec -T web true 2>/dev/null; then
         d up -d --no-build web
