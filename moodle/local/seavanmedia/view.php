@@ -104,7 +104,10 @@ if(in_array($f['kind'],['video','audio'],true)){
 echo html_writer::tag('h2',s($f['title']),['class'=>'sam-title sam-after-player','dir'=>'auto']);
 echo html_writer::tag('p',s($f['group']),['class'=>'sam-muted sam-group']);
 echo html_writer::start_div('sam-tools sam-filetools');
-if(sam_download_allowed($id)){echo html_writer::link(local_seavanmedia_url($id,$key,true),'دانلود فایل · '.($f['size']<1048576?max(1,round($f['size']/1024)).' KB':round($f['size']/1048576,1).' MB'),['class'=>'btn btn-primary']);}
+if (sam_download_allowed($id)) {
+    echo html_writer::link(new moodle_url('/local/seavanmedia/downloads.php', ['id' => $id]), 'دانلود دوره', ['class' => 'btn btn-primary']);
+    echo html_writer::link(local_seavanmedia_url($id, $key, true), 'دانلود این فایل', ['class' => 'btn btn-outline-primary']);
+}
 $keys=in_array($f['kind'],['video','audio'],true)?array_keys($videos):array_keys($files);$idx=array_search($key,$keys,true);
 if($idx>0){echo html_writer::link($goto($keys[$idx-1]),'جلسه قبلی',['class'=>'btn btn-outline-primary']);}
 if($idx<count($keys)-1){echo html_writer::link($goto($keys[$idx+1]),'جلسه بعدی',['class'=>'btn btn-outline-primary','id'=>'sam-next']);}
@@ -125,7 +128,6 @@ echo html_writer::tag('textarea',s($note['text']??''),['id'=>'sam-note','name'=>
 echo html_writer::tag('button','ذخیره در زمان فعلی',['type'=>'submit','class'=>'btn btn-outline-primary mt-2']);
 echo html_writer::end_tag('form');
 if(isset($note['time'])){echo html_writer::link(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$key,'at'=>$note['time']]),'رفتن به نشانک · '.$fmt($note['time']));}
-if(sam_download_allowed($id)){echo html_writer::div(html_writer::link(new moodle_url('/local/seavanmedia/bundle.php',['id'=>$id,'sesskey'=>sesskey()]),'دانلود کل دوره ZIP').' · '.html_writer::link(new moodle_url('/local/seavanmedia/bundle.php',['id'=>$id,'chapter'=>$f['group'],'sesskey'=>sesskey()]),'دانلود فصل ZIP'),'sam-muted');}
 echo html_writer::end_tag('details');
 $transcript=sam_transcript($id,$key);
 if($transcript){

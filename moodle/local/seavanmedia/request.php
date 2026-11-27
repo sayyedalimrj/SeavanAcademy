@@ -13,6 +13,8 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     $message->userfrom=$USER;$message->userto=get_admin();$message->subject='درخواست آموزش: '.$title;
     $message->fullmessage=$title."\n".$body;$message->fullmessageformat=FORMAT_PLAIN;
     $message->fullmessagehtml='';$message->smallmessage=$title;$message->notification=1;
+    $message->contexturl = (new moodle_url('/local/seavanmedia/requests.php', ['filter' => 'all']))->out(false);
+    $message->contexturlname = 'درخواست‌های آموزش';
     if(!message_send($message)){throw new moodle_exception('invalidrequest');}
     set_user_preference('seavanmedia_lastrequest',time());
     redirect(new moodle_url('/course/index.php'),'درخواست به مدیر ارسال شد.');

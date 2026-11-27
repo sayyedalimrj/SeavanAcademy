@@ -40,6 +40,14 @@ jobs:
         run: |
           set -euo pipefail
           test -f moodle/version.php
+      - name: Parse PowerShell operations
+        shell: pwsh
+        run: |
+          Get-ChildItem -File *.ps1 | ForEach-Object {
+            $errorsFound = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errorsFound)
+            if ($errorsFound) { throw ($errorsFound | Out-String) }
+          }
       - name: Build and initialize test site
         id: site_ready
         shell: bash
@@ -123,6 +131,23 @@ jobs:
         run: |
           docker compose exec -T -u www-data web php < tests/security-fixture.php > /tmp/security-fixture.json
           python3 tests/security-load.py /tmp/security-fixture.json
+          python3 tests/download-smoke.py /tmp/security-fixture.json
+      - name: Restore a real backup in the test stack
+        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File ./manage.ps1 -Action backup
+          backup="$(find backups -mindepth 1 -maxdepth 1 -type d -name 'snapshot-*' -print -quit)"
+          test -n "$backup"
+          docker compose exec -T -u www-data web php /var/www/html/admin/cli/cfg.php --name=seavan_ci_restore --set=changed
+          printf 'RESTORE\n' | pwsh -NoProfile -File ./manage.ps1 -Action restore -Snapshot "$backup"
+          curl --retry 5 --retry-connrefused -fsS http://127.0.0.1:8080/login/index.php -o /tmp/restored-login.html
+          grep -q 'seavan-login-story' /tmp/restored-login.html
+          if docker compose exec -T -u www-data web php /var/www/html/admin/cli/cfg.php --name=seavan_ci_restore; then
+            echo 'The post-backup setting survived restore'
+            exit 1
+          fi
       - name: Test secure HTTPS proxy-mode login
         if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
         run: |

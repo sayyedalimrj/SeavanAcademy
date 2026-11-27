@@ -4,31 +4,33 @@ Set-Location $PSScriptRoot
 function D { $extra=@(); if((Test-Path .env) -and (Test-Path compose.https.yaml) -and (Get-Content .env | Where-Object {$_ -like 'ACADEMY_HOST=*'})){ $extra=@('-f','compose.yaml','-f','compose.https.yaml') }; & docker compose @extra @args; if($LASTEXITCODE -ne 0){throw "Docker Compose failed ($LASTEXITCODE)"} }
 function Cli { D exec -T -u www-data web php /var/www/html/admin/cli/maintenance.php @args }
 function StopWorkers {
-    $script:previousWorkers=@(& docker compose --profile whisper ps --services --status running | Where-Object {$_ -in @('cron','processor','whisper')})
+    $script:previousWorkers=@(D --profile whisper ps --services --status running | Where-Object {$_ -in @('cron','processor','whisper')})
     D --profile whisper stop cron processor whisper
 }
 function StartWorkers { D up -d --no-build --no-deps cron processor; if($script:previousWorkers -contains 'whisper'){D --profile whisper up -d --no-build --no-deps whisper} }
 function Backup {
-    $dest=Join-Path $PSScriptRoot ("backups\snapshot-"+(Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
+    $dest=Join-Path $PSScriptRoot (Join-Path "backups" ("snapshot-"+(Get-Date -Format 'yyyyMMdd-HHmmss-fff')))
     New-Item -ItemType Directory -Path $dest -Force | Out-Null
     Cli --enable
-    StopWorkers
-    D exec -T db sh -c 'set -e; mariadb-dump --single-transaction --quick -uroot -p"$MARIADB_ROOT_PASSWORD" moodle > /tmp/seavan-snapshot.sql; gzip -f /tmp/seavan-snapshot.sql'
-    D cp 'db:/tmp/seavan-snapshot.sql.gz' (Join-Path $dest 'database.sql.gz')
-    D exec -T db rm -f /tmp/seavan-snapshot.sql.gz
-    D run --rm --no-deps -v "$($dest):/backup" --entrypoint sh web -c 'tar -C /var/moodledata --exclude=./cache --exclude=./localcache --exclude=./temp --exclude=./sessions --exclude=./seavan-whisper-model -czf /backup/moodledata.tar.gz .'
-    D run --rm --no-deps -v "$($dest):/backup:ro" --entrypoint sh web -c 'gzip -t /backup/database.sql.gz && tar -tzf /backup/moodledata.tar.gz >/dev/null'
-    Copy-Item .env (Join-Path $dest 'private.env')
-    $revision=(& git rev-parse HEAD).Trim()
-    if($LASTEXITCODE -ne 0){throw 'Cannot determine source revision'}
-    $revision | Set-Content -Encoding ASCII (Join-Path $dest 'source-commit.txt')
-    $hashes=@{}
-    foreach($name in @('database.sql.gz','moodledata.tar.gz','private.env','source-commit.txt')){
-        $hashes[$name]=(Get-FileHash (Join-Path $dest $name) -Algorithm SHA256).Hash
+    try {
+        StopWorkers
+        D exec -T db sh -c 'set -e; mariadb-dump --single-transaction --quick -uroot -p"$MARIADB_ROOT_PASSWORD" moodle > /tmp/seavan-snapshot.sql; gzip -f /tmp/seavan-snapshot.sql'
+        D cp 'db:/tmp/seavan-snapshot.sql.gz' (Join-Path $dest 'database.sql.gz')
+        D exec -T db rm -f /tmp/seavan-snapshot.sql.gz
+        D run --rm --no-deps -v "$($dest):/backup" --entrypoint sh web -c 'tar -C /var/moodledata --exclude=./cache --exclude=./localcache --exclude=./temp --exclude=./sessions --exclude=./seavan-whisper-model -czf /backup/moodledata.tar.gz .'
+        D run --rm --no-deps -v "$($dest):/backup:ro" --entrypoint sh web -c 'gzip -t /backup/database.sql.gz && tar -tzf /backup/moodledata.tar.gz >/dev/null'
+        Copy-Item .env (Join-Path $dest 'private.env')
+        $revision=(& git rev-parse HEAD).Trim()
+        if($LASTEXITCODE -ne 0){throw 'Cannot determine source revision'}
+        $revision | Set-Content -Encoding ASCII (Join-Path $dest 'source-commit.txt')
+        $hashes=@{}
+        foreach($name in @('database.sql.gz','moodledata.tar.gz','private.env','source-commit.txt')){
+            $hashes[$name]=(Get-FileHash (Join-Path $dest $name) -Algorithm SHA256).Hash
+        }
+        $hashes | ConvertTo-Json | Set-Content -Encoding ASCII (Join-Path $dest 'checksums.json')
+    } finally {
+        try { Cli --disable } finally { StartWorkers }
     }
-    $hashes | ConvertTo-Json | Set-Content -Encoding ASCII (Join-Path $dest 'checksums.json')
-    Cli --disable
-    StartWorkers
     Write-Host "Private backup: $dest"
 }
 if(!(Test-Path .env)){throw 'First run START.cmd'}
@@ -52,18 +54,7 @@ foreach($name in @('database.sql.gz','moodledata.tar.gz','private.env','source-c
 }
 if((Get-FileHash .env).Hash -ne (Get-FileHash (Join-Path $source 'private.env')).Hash){throw 'Restore requires the original matching .env and server configuration.'}
 $revision=(Get-Content (Join-Path $source 'source-commit.txt') -Raw).Trim()
-if($revision -notmatch '^[a-f0-9]{40}
-D run --rm --no-deps -v "$($source):/backup:ro" --entrypoint sh web -c 'gzip -t /backup/database.sql.gz && tar -tzf /backup/moodledata.tar.gz >/dev/null'
-D cp (Join-Path $source 'database.sql.gz') 'db:/tmp/seavan-restore.sql.gz'
-D exec -T db sh -c 'set -e; gzip -dc /tmp/seavan-restore.sql.gz > /tmp/seavan-restore.sql; mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE moodle; CREATE DATABASE moodle CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"; mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" moodle < /tmp/seavan-restore.sql; rm /tmp/seavan-restore.sql /tmp/seavan-restore.sql.gz'
-D run --rm --no-deps -v "$($source):/backup:ro" --entrypoint sh web -c 'set -e; find /var/moodledata -mindepth 1 -maxdepth 1 ! -name seavan-whisper-model -exec rm -rf {} +; tar -C /var/moodledata -xzf /backup/moodledata.tar.gz; chown -R www-data:www-data /var/moodledata'
-D run --rm --no-deps init
-D up -d --no-build --no-deps web
-D exec -T -u www-data web php /var/www/html/admin/cli/purge_caches.php
-Cli --disable
-StartWorkers
-Write-Host 'Restore completed. Original media must still be present in the configured course folder.'
-){throw 'Invalid snapshot source commit'}
+if($revision -notmatch '^[0-9a-f]{40}$'){throw 'Invalid snapshot source commit'}
 $current=(& git rev-parse HEAD).Trim()
 if($Action -eq 'restore' -and $current -ne $revision){throw 'Snapshot source differs. Use ROLLBACK.cmd.'}
 if($Action -eq 'rollback'){

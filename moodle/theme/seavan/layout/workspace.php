@@ -30,7 +30,8 @@ $primary = new \core\navigation\output\primary($PAGE);
 $menu = $primary->export_for_template($OUTPUT);
 $active = $PAGE->url->get_path();
 $view = optional_param('view','home',PARAM_ALPHA);
-$isplayer = str_ends_with($active,'/local/seavanmedia/view.php');
+$islearningmedia = str_contains($active, '/local/seavanmedia/') &&
+    in_array(basename($active), ['view.php', 'downloads.php', 'request.php'], true);
 $manage = has_capability('moodle/site:config', context_system::instance()) ||
     has_capability('moodle/site:uploadusers', context_system::instance()) ||
     has_capability('moodle/user:create', context_system::instance()) ||
@@ -39,12 +40,12 @@ $manage = has_capability('moodle/site:config', context_system::instance()) ||
     has_capability('moodle/cohort:manage', context_system::instance()) ||
     has_capability('report/log:view', context_system::instance());
 $links = [
-    ['text'=>'آموزش‌ها','library'=>true,'url'=>new moodle_url('/course/index.php'),'active'=>$isplayer || str_ends_with($active,'/course/index.php') || str_ends_with($active,'/my/index.php') || str_ends_with($active,'/local/seavanmedia/request.php')],
+    ['text'=>'آموزش‌ها','library'=>true,'url'=>new moodle_url('/course/index.php'),'active'=>$islearningmedia || str_ends_with($active,'/course/index.php') || str_ends_with($active,'/my/index.php')],
     ['text'=>'یادگیری من','learning'=>true,'url'=>new moodle_url('/my/courses.php'),'active'=>str_ends_with($active,'/my/courses.php')],
 ];
 if ($manage || ($view === 'manage' && str_ends_with($active,'/local/seavan/index.php'))) {
     $links[] = ['text'=>'مدیریت','management'=>true,'url'=>new moodle_url('/local/seavan/index.php',['view'=>'manage']),
-        'active'=>(str_contains($active,'/local/seavanmedia/') && !$isplayer && !str_ends_with($active,'/local/seavanmedia/request.php')) || (str_ends_with($active,'/local/seavan/index.php') && $view==='manage')];
+        'active'=>(str_contains($active,'/local/seavanmedia/') && !$islearningmedia) || (str_ends_with($active,'/local/seavan/index.php') && $view==='manage')];
 }
 foreach ($links as &$link) { $link['url'] = $link['url']->out(false); }
 unset($link);

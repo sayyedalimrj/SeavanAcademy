@@ -42,7 +42,10 @@ $add('moodle/site:config','سلامت سرور','دیسک‌ها، دیتابی�
 $add('moodle/site:config','سلامت کتابخانه','کدک، مدت، کاور و پردازش فایل‌ها','/local/seavanmedia/health.php');
 $add('report/log:view','خلاصه استفاده','گزارش ساده دوره‌ها','/local/seavanmedia/report.php');
 $add('moodle/site:config', 'ظاهر و فونت', 'بارگذاری ایران‌سنس دارای مجوز', '/admin/settings.php', ['section'=>'themesettingseavan']);
-$add('moodle/site:config', 'تنظیمات سامانه', 'پشتیبان‌گیری، افزونه‌ها و سایر تنظیمات', '/admin/search.php');
+$add('moodle/site:config', 'تنظیمات سامانه', 'افزونه‌ها، امنیت و تنظیمات اصلی Moodle', '/admin/search.php');
+if ($view === 'manage' && has_capability('moodle/site:config', $context) && (int)(get_admin()->id ?? 0) === (int)$USER->id) {
+    $add('moodle/site:config', 'درخواست‌های آموزش', 'خواندن درخواست‌های کارکنان و پاسخ در Moodle', '/local/seavanmedia/requests.php');
+}
 if (!$actions && $view === 'manage') {
     require_capability('moodle/site:config', $context);
 }
@@ -54,9 +57,9 @@ $PAGE->add_body_class('seavan-workspace');
 $PAGE->set_title('آکادمی سیوان');
 $PAGE->set_heading('آکادمی سیوان');
 
-$categories = core_course_category::get_all();
-$mine = enrol_get_my_courses();
-$lastaccess = $DB->get_records('user_lastaccess', ['userid'=>$USER->id], 'timeaccess DESC', 'courseid,timeaccess');
+$categories = $view === 'manage' ? [] : core_course_category::get_all();
+$mine = $view === 'manage' ? [] : enrol_get_my_courses();
+$lastaccess = $mine ? $DB->get_records('user_lastaccess', ['userid'=>$USER->id], 'timeaccess DESC', 'courseid,timeaccess') : [];
 $enrolled = [];
 foreach ($mine as $item) {
     $course = get_course($item->id);
@@ -121,29 +124,44 @@ if ($view==='mine' && $query==='' && !$categoryid && !$favonly) {
 }
 if ($view === 'manage') {
     echo html_writer::tag('h1','مرکز مدیریت',['class'=>'sa-page-title']);
-    echo html_writer::tag('p','برای انجام هر کار، بخش مربوط را انتخاب کنید.',['class'=>'seavan-note']);
+    if (has_capability('moodle/site:config', $context)) {
+        $metrics = [
+            'دوره‌های فعال' => $DB->count_records_select('course', 'id <> :site AND visible = 1', ['site' => SITEID]),
+            'حساب‌های فعال' => $DB->count_records_select('user', 'deleted = 0 AND suspended = 0 AND username <> :guest', ['guest' => 'guest']),
+        ];
+        if ((int)(get_admin()->id ?? 0) === (int)$USER->id) {
+            $metrics['درخواست‌های خوانده‌نشده'] = $DB->count_records_select('notifications',
+                'useridto = :user AND component = :component AND eventtype = :event AND timeread IS NULL',
+                ['user' => $USER->id, 'component' => 'local_seavanmedia', 'event' => 'courserequest']);
+        }
+        echo html_writer::start_div('sa-metrics');
+        foreach ($metrics as $label => $value) {
+            echo html_writer::div(html_writer::tag('strong', $digits($value)) . html_writer::tag('span', s($label)), 'sa-metric');
+        }
+        echo html_writer::end_div();
+    }
 
     $groups = [
-        'دوره‌ها و فایل‌ها'=>['ورود خودکار دوره‌ها','مدیریت آرشیو','دوره‌ها و دسته‌بندی','افزودن دوره'],
-        'کارکنان و دسترسی'=>['کاربران','افزودن همکار','افزودن گروهی کاربران','گروه‌های آموزشی'],
-        'آماده‌سازی رسانه'=>['سلامت کتابخانه','صف پردازش'],
-        'گزارش و نگهداری'=>['خلاصه استفاده','گزارش فعالیت','سلامت سرور','ظاهر و فونت','تنظیمات سامانه'],
+        'دوره‌ها و فایل‌ها' => ['i/folder', ['مدیریت آرشیو','ورود خودکار دوره‌ها','دوره‌ها و دسته‌بندی','افزودن دوره','درخواست‌های آموزش']],
+        'کارکنان و دسترسی' => ['i/users', ['کاربران','افزودن همکار','افزودن گروهی کاربران','گروه‌های آموزشی']],
+        'آماده‌سازی رسانه' => ['i/course', ['سلامت کتابخانه','صف پردازش']],
+        'گزارش و نگهداری' => ['i/report', ['خلاصه استفاده','گزارش فعالیت','سلامت سرور','ظاهر و فونت','تنظیمات سامانه']],
     ];
+    $actionsbylabel = array_column($actions, null, 0);
     echo html_writer::start_div('seavan-actions');
-    $groupicons=['01','02','03','04'];
-    $groupindex=0;
-    foreach ($groups as $heading=>$labels) {
-        $icon=$groupicons[$groupindex++];
+    foreach ($groups as $heading => [$icon, $labels]) {
         $rows = '';
-        foreach ($labels as $wanted) {
-            foreach ($actions as [$label,$detail,$link]) {
-                if ($label !== $wanted) { continue; }
-                $rows .= html_writer::link($link,html_writer::tag('span',s($label)).html_writer::tag('small',s($detail)),['class'=>'sa-admin-link']);
+        foreach ($labels as $label) {
+            if (isset($actionsbylabel[$label])) {
+                [, $detail, $link] = $actionsbylabel[$label];
+                $rows .= html_writer::link($link, html_writer::tag('span', s($label)) .
+                    html_writer::tag('small', s($detail)), ['class' => 'sa-admin-link']);
             }
         }
-        if ($rows) {
-            $headinghtml=html_writer::div(html_writer::tag('span',$icon,['class'=>'sa-group-icon','aria-hidden'=>'true']).html_writer::tag('h3',s($heading)),'sa-admin-heading');
-            echo html_writer::div($headinghtml.$rows,'sa-admin-panel');
+        if ($rows !== '') {
+            $symbol = html_writer::tag('span', $OUTPUT->pix_icon($icon, ''), ['class' => 'sa-group-icon', 'aria-hidden' => 'true']);
+            $headinghtml = html_writer::div($symbol . html_writer::tag('h2', s($heading)), 'sa-admin-heading');
+            echo html_writer::div($headinghtml . $rows, 'sa-admin-panel');
         }
     }
     echo html_writer::end_div();

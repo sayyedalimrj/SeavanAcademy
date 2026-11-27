@@ -56,6 +56,7 @@ with sync_playwright() as p:
     for name, path, selector in [
         ("learning", "/my/courses.php", ".seavan-shell"),
         ("archive", "/local/seavanmedia/archive.php", ".sa-subnav"),
+        ("requests", "/local/seavanmedia/requests.php", ".sa-subnav"),
         ("upload", "/local/seavanmedia/archive.php?section=upload", "form[enctype='multipart/form-data']"),
         ("versions", "/local/seavanmedia/archive.php?section=versions", "select[name='course']"),
         ("duplicates", "/local/seavanmedia/archive.php?section=duplicates", ".sa-subnav"),
@@ -79,6 +80,18 @@ with sync_playwright() as p:
     result = page.locator(".sa-session-result").filter(has_text="02 - Browser").first
     result.wait_for(timeout=60000)
     result.click()
+    page.locator('.sam-player-wrap').wait_for()
+    downloadpage = page.get_by_role('link', name='دانلود دوره', exact=True)
+    downloadpage.wait_for()
+    courseview = page.url
+    downloadpage.click()
+    page.locator('.sa-download-form').wait_for()
+    for width in (1280, 390):
+        page.set_viewport_size({"width": width, "height": 844})
+        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 2"), "Downloads mobile overflow"
+        page.screenshot(path=str(shots / f'downloads-{width}.png'), full_page=True)
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(courseview, wait_until="domcontentloaded")
     page.locator('.sam-player-wrap').wait_for()
     page.screenshot(path=str(shots / '04-player-before-init.png'), full_page=True)
     page.locator('[data-seavan-engine="videojs"]').wait_for(timeout=60000)

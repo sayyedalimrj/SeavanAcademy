@@ -18,3 +18,9 @@ $string['privacy:metadata:note']='یادداشت و نشانک شخصی کارب
 
 $string['messageprovider:courserequest']='درخواست آموزش';
 $string['messageprovider:courseassigned']='آموزش اختصاص‌یافته جدید';
+$string['bundlechoosefiles'] = 'بین ۱ تا ۱۰۰۰ فایل انتخاب کنید یا دانلود فصل و بخش را بزنید.';
+$string['bundlestale'] = 'آرشیو دوره تغییر کرده است. صفحه دانلود را دوباره باز کنید و انتخابتان را انجام دهید.';
+$string['bundletoolarge'] = 'حجم فایل ZIP از ۲۰ گیبی‌بایت بیشتر است. فصل‌ها، بخش‌ها یا فایل‌ها را جداگانه دانلود کنید.';
+$string['bundlebusy'] = 'سامانه در حال آماده‌سازی فایل ZIP دیگری است. کمی بعد دوباره تلاش کنید.';
+$string['bundledisk'] = 'فضای موقت سرور برای این ZIP کافی نیست. بخش کوچک‌تری را انتخاب کنید.';
+$string['bundlefailed'] = 'ساخت فایل ZIP انجام نشد. صفحه را تازه کنید و دوباره تلاش کنید.';

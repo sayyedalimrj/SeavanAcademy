@@ -52,13 +52,17 @@ echo html_writer::start_tag('nav',['class'=>'sa-subnav','aria-label'=>'بخش‌
 foreach($sectionlinks as $v=>$title){echo html_writer::link(new moodle_url('/local/seavanmedia/archive.php',['section'=>$v]),$title,$v===$section?['aria-current'=>'page']:[]);}
 echo html_writer::end_tag('nav');
 $choices=[0=>'دوره جدید'];$courses=$DB->get_records_select('course',$DB->sql_like('idnumber',':prefix'),['prefix'=>'seavanmedia:%'],'fullname','id,fullname,idnumber');
-$table=new html_table();$table->head=['دوره','آرشیو','دانلود','اطلاعات'];
+$table=new html_table();$table->head=['دوره','آرشیو','دانلود کارکنان','مدیریت دوره'];
 foreach($courses as $c){
     $folder=$folders[$c->idnumber]??null;
     if($folder&&str_starts_with($folder,$CFG->dataroot.'/seavan-uploads/')){$choices[$c->id]=$c->fullname;}
     $blocked=get_config('local_seavanmedia','nodownload_'.$c->id)==='1';
     $button=$OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['id'=>$c->id,'action'=>'policy','blocked'=>$blocked?0:1,'sesskey'=>sesskey()]),$blocked?'فعال کردن دانلود':'غیرفعال کردن دانلود','post');
-    if($section==='courses'){$table->data[]=[s($c->fullname),html_writer::tag('span',$folder?'متصل':'قطع یا نامشخص',['class'=>'sa-status '.($folder?'sa-ok':'sa-warn')]),html_writer::tag('span',$blocked?'ممنوع':'مجاز',['class'=>'sa-status '.($blocked?'sa-warn':'sa-ok')]).$button,html_writer::link(new moodle_url('/course/edit.php',['id'=>$c->id]),'ویرایش اطلاعات')];}
+    if($section==='courses'){$table->data[]=[s($c->fullname),html_writer::tag('span',$folder?'متصل':'قطع یا نامشخص',['class'=>'sa-status '.($folder?'sa-ok':'sa-warn')]),html_writer::tag('span',$blocked?'ممنوع':'مجاز',['class'=>'sa-status '.($blocked?'sa-warn':'sa-ok')]).$button,html_writer::div(
+        html_writer::link(new moodle_url('/course/edit.php',['id'=>$c->id]),'ویرایش و کاور') .
+        html_writer::link(new moodle_url('/enrol/users.php',['id'=>$c->id]),'ثبت‌نام و دسترسی کاربران') .
+        ($folder ? html_writer::link(new moodle_url('/local/seavanmedia/downloads.php',['id'=>$c->id]),'فایل‌های قابل دانلود') : ''),
+        'sa-archive-actions')];}
 }
 if($section==='courses'){
 if($table->data){echo html_writer::div(html_writer::table($table),'table-responsive');}else{echo html_writer::div('هنوز دوره‌ای در آرشیو ثبت نشده است.','seavan-empty');}

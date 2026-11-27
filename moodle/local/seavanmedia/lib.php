@@ -125,10 +125,14 @@ function local_seavanmedia_require_course(int $id) {
 function local_seavanmedia_get_file($course,string $key): array {
     $files = local_seavanmedia_course_files($course);
     if (!isset($files[$key])) { throw new moodle_exception('mediaunavailable','local_seavanmedia'); }
-    $file = $files[$key];
-    // Cached inventory is not authorization. Recheck the actual path and fingerprint.
-    clearstatcache(true,$file['path']);
     $folder = local_seavanmedia_folders()[$course->idnumber] ?? '';
+    return sam_validate_media_file($files[$key], $folder, $key);
+}
+
+/** Revalidate a known inventory entry immediately before serving its contents. */
+function sam_validate_media_file(array $file, string $folder, string $key): array {
+    // Cached inventory is not authorization. Recheck the actual path and fingerprint.
+    clearstatcache(true, $file['path']);
     $root = sam_root_for($folder);
     $path = realpath($file['path']);
     if (!$root || !$folder || !$path || !str_starts_with($folder,$root.'/') ||

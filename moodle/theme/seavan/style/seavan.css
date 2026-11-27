@@ -98,7 +98,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,su
 .seavan-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:24px 0}
 .sa-admin-panel{min-width:0;background:var(--sa-paper);border:1px solid var(--sa-border);border-radius:15px;padding:18px 20px;box-shadow:var(--sa-shadow)}
 .sa-admin-heading{display:flex;align-items:center;gap:12px;margin-bottom:9px;padding-bottom:14px;border-bottom:1px solid var(--sa-border)}
-.sa-admin-heading h3{font-size:1.08rem;font-weight:700;margin:0}
+.sa-admin-heading h2{font-size:1.08rem;font-weight:700;margin:0}
 .sa-group-icon{width:40px!important;height:40px!important;padding:10px;background:var(--sa-soft);color:var(--sa-link);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:1.15rem!important}
 .sa-admin-link{display:block;position:relative;padding:12px 10px 12px 26px;border-bottom:1px solid var(--sa-border);text-decoration:none!important;border-radius:5px}
 .sa-admin-link:last-child{border:0}
@@ -224,3 +224,26 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,su
 /* Final review: prevent dense mobile tables collapsing into single letters. */
 .sa-main .table-responsive table{min-width:560px;table-layout:auto}.sa-main .table-responsive th,.sa-main .table-responsive td{overflow-wrap:normal;word-break:normal}.sa-main .table-responsive td:first-child{min-width:145px;overflow-wrap:anywhere}.sa-main .table-responsive td code{overflow-wrap:anywhere}.sa-dark .sa-main .table-responsive{background:var(--sa-paper)}.sa-main .table-responsive{overscroll-behavior-inline:contain}.sa-main .table-responsive:focus-within{outline:2px solid var(--sa-gold)}
 @media(max-width:540px){.sa-main .table-responsive table{min-width:500px}.sa-main .table-responsive{max-width:100%;overflow-x:auto}.sa-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.sa-metric span{line-height:1.6;display:block}}
+
+/* Course downloads use the same shell, status colors and buttons as the learning workspace. */
+.sa-download-hero{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:20px 22px;background:var(--sa-paper);border:1px solid var(--sa-border);border-inline-start:4px solid var(--sa-gold);border-radius:14px;box-shadow:var(--sa-shadow)}
+.sa-download-hero .seavan-section,.sa-download-hero .seavan-note{margin:0}
+.sa-download-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.sa-download-part{display:grid;gap:4px;padding:12px;text-align:center;border:1px solid var(--sa-border);border-radius:10px;background:var(--sa-paper);color:var(--sa-muted)}
+.sa-download-group{margin:10px 0;background:var(--sa-paper);border:1px solid var(--sa-border);border-radius:12px;overflow:hidden}
+.sa-download-group summary{cursor:pointer;padding:12px 16px;background:var(--sa-soft);overflow-wrap:anywhere}
+.sa-download-group summary .seavan-note{margin-inline-start:9px}
+.sa-download-chapter,.sa-download-row{padding:9px 16px;border-top:1px solid var(--sa-border)}
+.sa-download-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px}
+.sa-download-row label{display:flex;align-items:center;gap:8px;margin:0;min-width:0;overflow-wrap:anywhere}
+.sa-download-row input{flex:none;width:16px;height:16px;accent-color:#2c567c}
+.sa-download-row small{color:var(--sa-muted);white-space:nowrap}
+.sa-download-submit{position:sticky;bottom:0;padding:10px 0;background:var(--sa-bg)}
+@media(max-width:540px){.sa-download-hero,.sa-download-row,.sa-download-group summary{padding-inline:10px}.sa-download-row{gap:7px}.sa-download-row small{font-size:.68rem}}
+
+.sa-group-icon .icon{margin:0;font-size:1.15rem}
+.sa-request-card{margin-bottom:12px}
+.sa-request-card h2{margin-top:0}
+.sa-request-body{overflow-wrap:anywhere}
+.sa-request-actions,.sa-archive-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sa-archive-actions a{padding:4px 0;text-underline-offset:3px}
