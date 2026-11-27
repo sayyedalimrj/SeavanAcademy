@@ -2,7 +2,10 @@ param([ValidateSet('backup','restore','update','whisper','rollback')][string]$Ac
 $ErrorActionPreference='Stop'
 Set-Location $PSScriptRoot
 function D { $extra=@(); if((Test-Path .env) -and (Test-Path compose.https.yaml) -and (Get-Content .env | Where-Object {$_ -like 'ACADEMY_HOST=*'})){ $extra=@('-f','compose.yaml','-f','compose.https.yaml') }; & docker compose @extra @args; if($LASTEXITCODE -ne 0){throw "Docker Compose failed ($LASTEXITCODE)"} }
-function Cli { D exec -T -u www-data web php /var/www/html/admin/cli/maintenance.php @args }
+function Set-AcademyMaintenance([bool]$Enabled) {
+    $argument = if ($Enabled) { '--enable' } else { '--disable' }
+    D exec -T -u www-data web php /var/www/html/admin/cli/maintenance.php $argument
+}
 function StopWorkers {
     $script:previousWorkers=@(D --profile whisper ps --services --status running | Where-Object {$_ -in @('cron','processor','whisper')})
     D --profile whisper stop cron processor whisper
@@ -11,7 +14,7 @@ function StartWorkers { D up -d --no-build --no-deps cron processor; if($script:
 function Backup {
     $dest=Join-Path $PSScriptRoot (Join-Path "backups" ("snapshot-"+(Get-Date -Format 'yyyyMMdd-HHmmss-fff')))
     New-Item -ItemType Directory -Path $dest -Force | Out-Null
-    Cli --enable
+    Set-AcademyMaintenance $true
     try {
         StopWorkers
         D exec -T db sh -c 'set -e; mariadb-dump --single-transaction --quick -uroot -p"$MARIADB_ROOT_PASSWORD" moodle > /tmp/seavan-snapshot.sql; gzip -f /tmp/seavan-snapshot.sql'
@@ -29,7 +32,7 @@ function Backup {
         }
         $hashes | ConvertTo-Json | Set-Content -Encoding ASCII (Join-Path $dest 'checksums.json')
     } finally {
-        try { Cli --disable } finally { StartWorkers }
+        try { Set-AcademyMaintenance $false } finally { StartWorkers }
     }
     Write-Host "Private backup: $dest"
 }
@@ -64,7 +67,7 @@ if($Action -eq 'rollback'){
 }
 if((Read-Host 'Restore replaces current database and Moodledata. Type RESTORE to confirm') -ne 'RESTORE'){exit}
 Backup
-Cli --enable
+Set-AcademyMaintenance $true
 StopWorkers
 D stop web
 if($Action -eq 'rollback' -and $current -ne $revision){
@@ -79,6 +82,6 @@ D run --rm --no-deps -v "$($source):/backup:ro" --entrypoint sh web -c 'set -e; 
 D run --rm --no-deps init
 D up -d --no-build --no-deps web
 D exec -T -u www-data web php /var/www/html/admin/cli/purge_caches.php
-Cli --disable
+Set-AcademyMaintenance $false
 StartWorkers
 Write-Host 'Restore completed. Original media must still be present in the configured course folder.'

@@ -91,13 +91,18 @@ assert 'attachment' in headers.get('Content-Disposition', '') and payload
 fetch(admin, media + 'archive.php', data={'id': fixture['course'], 'sesskey': fields['sesskey'], 'action': 'policy', 'blocked': 1})
 
 subject = 'CI unique training request'
-fetch(learner, media + 'request.php', data={'sesskey': learnerkey, 'title': subject, 'body': 'Details <literal>'})
+description = 'CI course body for a civil engineering lesson'
+_, raw = fetch(learner, media + 'request.php', data={'sesskey': learnerkey, 'title': subject, 'body': description})
+assert 'درخواست به مدیر ارسال شد' in raw.decode(), 'Moodle did not confirm submission'
 _, raw = fetch(learner, media + 'requests.php')
 assert subject not in raw.decode()
 _, raw = fetch(admin, media + 'requests.php')
 inbox = raw.decode()
-assert subject in inbox and 'Details &lt;literal&gt;' in inbox
-notificationid = field(inbox, 'id')
+assert subject in inbox, 'Submitted request missing from administrator inbox'
+assert description in inbox, 'Request details missing from administrator inbox'
+card = re.search(r'<article class="sa-admin-panel sa-request-card">([\s\S]+?)</article>', inbox)
+assert card, 'Request card missing'
+notificationid = field(card[1], 'id')
 fetch(admin, media + 'requests.php', data={'sesskey': fields['sesskey'], 'id': notificationid})
 _, raw = fetch(admin, media + 'requests.php')
 assert subject not in raw.decode()

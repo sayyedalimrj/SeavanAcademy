@@ -99,7 +99,7 @@ try {
     foreach ($files as $key => $file) {
         $file = sam_validate_media_file($file, $folder, $key);
         if (str_contains($file['rel'], '\\') || preg_match('~(^|/)\.\.?(/|$)~', $file['rel'])
-                || !$zip->addFile($file['path'], $file['rel'])
+                || !$zip->addFile($file['path'], $file['rel'], 0, $file['size'])
                 || !$zip->setCompressionName($file['rel'], ZipArchive::CM_STORE)) {
             throw new moodle_exception('bundlefailed', 'local_seavanmedia', $back);
         }
