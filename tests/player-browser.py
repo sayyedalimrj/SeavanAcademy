@@ -1,6 +1,6 @@
 """Browser-level checks for the genuine Moodle Video.js integration."""
 import pathlib
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import TimeoutError as PlaywrightTimeout, sync_playwright
 
 base = "http://127.0.0.1:8080"
 shots = pathlib.Path("ui-screenshots")
@@ -15,8 +15,18 @@ with sync_playwright() as p:
     page.screenshot(path=str(shots / "01-login.png"), full_page=True)
     page.locator("#username").fill("admin")
     page.locator("#password").fill(env["ADMIN_PASSWORD"])
-    page.locator("#loginbtn").click()
-    page.wait_for_url(lambda url: "/login/index.php" not in url, timeout=60000)
+    try:
+        with page.expect_response(lambda response: response.request.method == "POST" and
+                                  response.url == base + "/login/index.php", timeout=15000) as submitted:
+            page.locator("#loginbtn").click()
+        print("Browser login POST returned", submitted.value.status)
+        page.wait_for_url(lambda url: "/login/index.php" not in url, wait_until="domcontentloaded", timeout=30000)
+    except PlaywrightTimeout as error:
+        page.screenshot(path=str(shots / "01-login-after-submit.png"), full_page=True)
+        notice = page.locator("#loginerrormessage")
+        if notice.is_visible():
+            raise AssertionError("Moodle browser login failed: " + notice.inner_text().strip()) from error
+        raise AssertionError("Moodle browser login did not complete at " + page.url.split("?")[0]) from error
     page.goto(base + "/course/index.php", wait_until="networkidle")
     page.locator(".seavan-course").first.wait_for()
     assert page.locator(".sa-main-nav").count() == 1

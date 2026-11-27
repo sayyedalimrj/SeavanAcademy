@@ -134,7 +134,12 @@ jobs:
             if curl -fsS http://127.0.0.1:8080/login/index.php -o /tmp/proxy-login.html; then break; fi
             sleep 2
           done
-          SEAVAN_TEST_PASSWORD="$(grep '^ADMIN_PASSWORD=' .env | cut -d= -f2-)" python3 tests/preview-login.py --origin https://academy.preview.test --port 8080
+          old_password="$(grep '^ADMIN_PASSWORD=' .env | cut -d= -f2-)"
+          SEAVAN_TEST_PASSWORD="$old_password" python3 tests/preview-login.py --origin https://academy.preview.test --port 8080
+          export SEAVAN_TEST_PASSWORD="Aa1!$(openssl rand -hex 24)"
+          docker compose exec -T -e SEAVAN_TEST_PASSWORD -u www-data web php < .devcontainer/reset-preview-admin.php
+          python3 tests/preview-login.py --origin https://academy.preview.test --port 8080
+          SEAVAN_TEST_PASSWORD="$old_password" python3 tests/preview-login.py --origin https://academy.preview.test --port 8080 --expect-denied
       - name: Clean test environment
         if: always()
         run: |

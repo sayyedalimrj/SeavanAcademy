@@ -24,6 +24,7 @@ p = argparse.ArgumentParser()
 p.add_argument("--origin", required=True)
 p.add_argument("--port", type=int, required=True)
 p.add_argument("--username", default="admin")
+p.add_argument("--expect-denied", action="store_true")
 a = p.parse_args()
 origin = a.origin.rstrip("/")
 host = urlsplit(origin).netloc
@@ -88,6 +89,13 @@ if not secure_session:
     sys.exit("FAIL: isolated secure session cookie missing")
 get("/login/index.php", urlencode({"username":a.username,"password":password,"logintoken":login.token}).encode())
 page = get("/local/seavan/index.php?view=manage")
-if 'class="sa-main-nav"' not in page or 'class="sa-admin-panel"' not in page:
-    sys.exit("FAIL: login did not reach the authenticated management page")
-print("PASS: HTTPS proxy-mode login, CSRF token, secure cookie, session persistence and admin page")
+if a.expect_denied:
+    denied = Login()
+    denied.feed(page)
+    if not denied.token or 'class="sa-admin-panel"' in page:
+        sys.exit("FAIL: the old password was not rejected by Moodle")
+    print("PASS: Moodle rejected the old password")
+else:
+    if 'class="sa-main-nav"' not in page or 'class="sa-admin-panel"' not in page:
+        sys.exit("FAIL: login did not reach the authenticated management page")
+    print("PASS: HTTPS proxy-mode login, CSRF token, secure cookie, session persistence and admin page")
