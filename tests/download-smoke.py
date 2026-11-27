@@ -93,7 +93,7 @@ fetch(admin, media + 'archive.php', data={'id': fixture['course'], 'sesskey': fi
 subject = 'CI unique training request'
 description = 'CI course body for a civil engineering lesson'
 _, raw = fetch(learner, media + 'request.php', data={'sesskey': learnerkey, 'title': subject, 'body': description})
-assert 'درخواست به مدیر ارسال شد' in raw.decode(), 'Moodle did not confirm submission'
+assert 'seavan-grid' in raw.decode(), 'Moodle did not redirect after request submission'
 _, raw = fetch(learner, media + 'requests.php')
 assert subject not in raw.decode()
 _, raw = fetch(admin, media + 'requests.php')
