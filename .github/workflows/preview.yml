@@ -6,26 +6,50 @@ on:
     paths:
       - 'preview/**'
       - '.github/workflows/preview.yml'
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 concurrency:
   group: pages-preview
   cancel-in-progress: true
 jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: preview
+          persist-credentials: false
+      - name: Checkout the Moodle theme used for the demo
+        uses: actions/checkout@v6
+        with:
+          ref: 71001b7e5a665c7d6fd533a914e4f1704f5f3af4
+          path: academy-theme
+          sparse-checkout: |
+            moodle/theme/seavan
+            moodle/local/seavanmedia
+            docker
+          persist-credentials: false
+      - uses: actions/configure-pages@v5
+      - name: Build the static preview
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+          bash preview/build.sh academy-theme _site
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
   deploy:
-    runs-on: ubuntu-latest
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Validate preview
-        run: test -s preview/index.html
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: preview
       - uses: actions/deploy-pages@v4
         id: deployment
