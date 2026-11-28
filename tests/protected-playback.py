@@ -40,8 +40,11 @@ with sync_playwright() as p:
     )
     learner.wait_for_function("document.querySelector('#sam-player').readyState >= 1")
     player.evaluate("(video) => video.play()")
-    learner.wait_for_function("document.querySelector('#sam-player').currentTime > 0.2")
-    print('PASS: actual protected WebM playback and session-bound byte ranges.', flush=True)
+    learner.wait_for_function("document.querySelector('#sam-player').currentTime > 1.2")
+    with learner.expect_response(lambda result: '/progress.php' in result.url and result.status == 200) as observed:
+        player.evaluate("(video) => video.pause()")
+    assert observed.value.json()['percent'] > 0, 'The actual playback was not recorded.'
+    print('PASS: actual protected WebM playback, session-bound byte ranges and recorded progress.', flush=True)
     assert learner.request.get(origin + '/file.php?' + urlencode(identity)).status == 404
     assert 'video/' not in learner.request.get(stream + '&download=1').headers.get('content-type', '')
     expect(learner.get_by_role('link', name='دانلود دوره', exact=True)).to_have_count(0)
@@ -61,9 +64,11 @@ with sync_playwright() as p:
     sign_in(admin, 'admin', settings['ADMIN_PASSWORD'])
     admin.goto(origin + '/report.php?' + urlencode({'course': course}))
     expect(admin.get_by_role('columnheader', name='مدت مشاهده')).to_be_visible()
-    expect(admin.get_by_text('CI Learner', exact=True)).to_be_visible()
-    watched = admin.get_by_role('cell', name='0:00:09', exact=True)
-    expect(watched).to_be_visible()
+    baseline = admin.get_by_role('row').filter(has_text='01 - Sample')
+    expect(baseline.get_by_text('CI Learner', exact=True)).to_be_visible()
+    expect(baseline.get_by_role('cell', name='0:00:09', exact=True)).to_be_visible()
+    recorded = admin.get_by_role('row').filter(has_text='02 - Browser')
+    expect(recorded.get_by_text('CI Learner', exact=True)).to_be_visible()
     print('PASS: viewing report shows the enrolled learner and the measured session duration.', flush=True)
 
     admin.goto(origin + '/view.php?' + urlencode(identity | {'native': 1}))
