@@ -17,6 +17,10 @@ function sam_root_for(string $folder): ?string {
     return null;
 }
 function sam_download_allowed(int $id): bool {
+    global $CFG;
+    if (!empty($CFG->seavanprotectedmedia)) {
+        return false;
+    }
     return get_config('local_seavanmedia','nodownload_'.$id)!=='1' ||
         has_capability('moodle/course:update',context_course::instance($id));
 }
@@ -228,7 +232,7 @@ function local_seavanmedia_sync(): array {
                 $module = $DB->get_record('modules',['name'=>'url'],'*',MUST_EXIST);
                 if (!$DB->record_exists('course_modules',['course'=>$course->id,'idnumber'=>'seavanmedia-player'])) {
                     add_moduleinfo((object)['modulename'=>'url','module'=>$module->id,'section'=>0,'visible'=>1,
-                        'name'=>'مشاهده جلسات و دانلود فایل‌ها','cmidnumber'=>'seavanmedia-player','intro'=>'','introformat'=>FORMAT_HTML,
+                        'name'=>'مشاهده جلسات','cmidnumber'=>'seavanmedia-player','intro'=>'','introformat'=>FORMAT_HTML,
                         'externalurl'=>(new moodle_url('/local/seavanmedia/view.php',['id'=>$course->id]))->out(false),
                         'display'=>RESOURCELIB_DISPLAY_OPEN,'groupmode'=>0,'completion'=>0],$course);
                 }
@@ -247,6 +251,39 @@ function local_seavanmedia_url(int $courseid,string $file='',bool $download=fals
     if ($download) { $params['download']=1; }
     return new moodle_url('/local/seavanmedia/file.php',$params);
 }
+function sam_playback_url(moodle_url $url, int $courseid, string $file, string $variant): moodle_url {
+    global $CFG, $SESSION;
+    if (empty($CFG->seavanprotectedmedia)) {
+        return $url;
+    }
+    $SESSION->seavanplaybacksecret ??= bin2hex(random_bytes(32));
+    $expires = time() + 8 * HOURSECS;
+    $ticket = hash_hmac('sha256', "$courseid:$file:$variant:$expires", $SESSION->seavanplaybacksecret);
+    return new moodle_url($url, ['until' => $expires, 'ticket' => $ticket]);
+}
+
+/** Serve a session-bound playback request with native Moodle byte ranges. */
+function sam_send_protected_media(int $courseid, string $file, string $variant, string $path, string $mime): void {
+    global $SESSION;
+    $expires = optional_param('until', 0, PARAM_INT);
+    $ticket = optional_param('ticket', '', PARAM_ALPHANUM);
+    $dest = $_SERVER['HTTP_SEC_FETCH_DEST'] ?? '';
+    $site = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? '';
+    if (empty($SESSION->seavanplaybacksecret) || $expires <= time() ||
+            !in_array($dest, ['', 'audio', 'video'], true) || !in_array($site, ['', 'same-origin'], true) ||
+            !hash_equals(hash_hmac('sha256', "$courseid:$file:$variant:$expires", $SESSION->seavanplaybacksecret), $ticket)) {
+        send_file_not_found();
+    }
+    \core\session\manager::write_close();
+    header('Content-Disposition: inline');
+    header('Cache-Control: private, no-store');
+    header('Referrer-Policy: no-referrer');
+    header('Cross-Origin-Resource-Policy: same-origin');
+    header('X-Content-Type-Options: nosniff');
+    readfile_accel($path, $mime, true);
+    exit;
+}
+
 function local_seavanmedia_progress(int $courseid): array {
     global $DB,$USER;
     $rows=$DB->get_records('local_seavanmedia_progress',['courseid'=>$courseid,'userid'=>$USER->id],'timemodified DESC');

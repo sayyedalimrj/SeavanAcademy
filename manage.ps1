@@ -11,6 +11,18 @@ function StopWorkers {
     D --profile whisper stop cron processor whisper
 }
 function StartWorkers { D up -d --no-build --no-deps cron processor; if($script:previousWorkers -contains 'whisper'){D --profile whisper up -d --no-build --no-deps whisper} }
+function Get-AcademyRevision {
+    if (Test-Path .git) {
+        $revision = (& git rev-parse HEAD).Trim()
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot determine source revision.' }
+        return $revision
+    }
+    if (Test-Path RELEASE-COMMIT) {
+        $revision = (Get-Content RELEASE-COMMIT -Raw).Trim()
+        if ($revision -match '^[0-9a-f]{40}$') { return $revision }
+    }
+    throw 'Cannot determine source revision. Keep RELEASE-COMMIT with the installation.'
+}
 function Backup {
     $dest=Join-Path $PSScriptRoot (Join-Path "backups" ("snapshot-"+(Get-Date -Format 'yyyyMMdd-HHmmss-fff')))
     New-Item -ItemType Directory -Path $dest -Force | Out-Null
@@ -23,8 +35,7 @@ function Backup {
         D run --rm --no-deps -v "$($dest):/backup" --entrypoint sh web -c 'tar -C /var/moodledata --exclude=./cache --exclude=./localcache --exclude=./temp --exclude=./sessions --exclude=./seavan-whisper-model -czf /backup/moodledata.tar.gz .'
         D run --rm --no-deps -v "$($dest):/backup:ro" --entrypoint sh web -c 'gzip -t /backup/database.sql.gz && tar -tzf /backup/moodledata.tar.gz >/dev/null'
         Copy-Item .env (Join-Path $dest 'private.env')
-        $revision=(& git rev-parse HEAD).Trim()
-        if($LASTEXITCODE -ne 0){throw 'Cannot determine source revision'}
+        $revision=Get-AcademyRevision
         $revision | Set-Content -Encoding ASCII (Join-Path $dest 'source-commit.txt')
         $hashes=@{}
         foreach($name in @('database.sql.gz','moodledata.tar.gz','private.env','source-commit.txt')){
@@ -40,6 +51,7 @@ if(!(Test-Path .env)){throw 'First run START.cmd'}
 if($Action -eq 'backup'){Backup;exit}
 if($Action -eq 'whisper'){D --profile whisper up -d --build whisper;exit}
 if($Action -eq 'update'){
+    if (!(Test-Path .git)) { throw 'This installation was extracted from a package. Back up and use the next installer package to update.' }
     Backup
     & git pull --ff-only
     if($LASTEXITCODE -ne 0){throw 'Git update failed. Backup remains available.'}
@@ -58,9 +70,10 @@ foreach($name in @('database.sql.gz','moodledata.tar.gz','private.env','source-c
 if((Get-FileHash .env).Hash -ne (Get-FileHash (Join-Path $source 'private.env')).Hash){throw 'Restore requires the original matching .env and server configuration.'}
 $revision=(Get-Content (Join-Path $source 'source-commit.txt') -Raw).Trim()
 if($revision -notmatch '^[0-9a-f]{40}$'){throw 'Invalid snapshot source commit'}
-$current=(& git rev-parse HEAD).Trim()
+$current=Get-AcademyRevision
 if($Action -eq 'restore' -and $current -ne $revision){throw 'Snapshot source differs. Use ROLLBACK.cmd.'}
 if($Action -eq 'rollback'){
+    if (!(Test-Path .git)) { throw 'Cross-version rollback requires a Git checkout and the original release.' }
     & git cat-file -e "$revision^{commit}"
     if($LASTEXITCODE -ne 0){throw 'Snapshot source not found in local Git history'}
     if((& git status --porcelain --untracked-files=no)){throw 'Tracked source has local modifications'}

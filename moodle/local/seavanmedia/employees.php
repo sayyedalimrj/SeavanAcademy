@@ -19,7 +19,8 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     if(!$sheets||$sheets[0]['totalRows']>2001||$sheets[0]['totalColumns']>20){throw new moodle_exception('invalidrequest');}
     $reader->setLoadSheetsOnly($sheets[0]['worksheetName']);
     $book=$reader->load($f['tmp_name']);$sheet=$book->getActiveSheet();
-    $headers=[];$allowed=['username','firstname','lastname','email','idnumber','department','institution','cohort1','password'];
+    $headers=[];$allowed=['username','firstname','lastname','email','idnumber','department','institution','cohort1'];
+    if (empty($CFG->seavanprotectedmedia)) { $allowed[] = 'password'; }
     foreach($sheet->rangeToArray('A1:'.$sheet->getHighestDataColumn().'1',null,false,false)[0] as $h){$headers[]=strtolower(trim((string)$h));}
     foreach(['username','firstname','lastname','email'] as $required){if(!in_array($required,$headers,true)){throw new moodle_exception('invalidrequest');}}
     if(count(array_unique($headers))!==count($headers)||array_diff($headers,$allowed)){throw new moodle_exception('invalidrequest');}
@@ -46,7 +47,7 @@ echo html_writer::start_div('sa-form-panel');
 echo html_writer::tag('h2','۱. آماده‌سازی فایل');
 echo html_writer::tag('p','ستون‌های الزامی: نام کاربری، نام، نام خانوادگی و ایمیل. حداکثر ۲۰۰۰ نفر.');
 echo html_writer::tag('code','username, firstname, lastname, email',['dir'=>'ltr','class'=>'sa-code']);
-echo html_writer::tag('p','ستون‌های اختیاری: idnumber, department, institution, cohort1, password',['class'=>'seavan-note']);
+echo html_writer::tag('p','ستون‌های اختیاری: idnumber, department, institution, cohort1' . (empty($CFG->seavanprotectedmedia) ? ', password' : ''), ['class'=>'seavan-note']);
 echo html_writer::tag('h2','۲. انتخاب فایل و پیش‌نمایش');
 echo html_writer::start_tag('form',['method'=>'post','enctype'=>'multipart/form-data','action'=>$url->out(false)]);
 echo html_writer::empty_tag('input',['type'=>'hidden','name'=>'sesskey','value'=>sesskey()]);

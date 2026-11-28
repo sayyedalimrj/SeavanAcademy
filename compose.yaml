@@ -6,6 +6,7 @@ x-app: &app
     SITE_URL: ${SITE_URL:?Run START.cmd first}
     DB_PASSWORD: ${DB_PASSWORD:?Run START.cmd first}
     SSL_PROXY: ${SSL_PROXY:-0}
+    SEAVAN_PROTECTED_MEDIA: ${SEAVAN_PROTECTED_MEDIA:-0}
   volumes:
     - moodledata:/var/moodledata
     - type: bind
@@ -44,6 +45,8 @@ services:
       SSL_PROXY: ${SSL_PROXY:-0}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Run START.cmd first}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?Run START.cmd first}
+      SEAVAN_BOOTSTRAP_LOCAL: ${SEAVAN_BOOTSTRAP_LOCAL:-0}
+      SEAVAN_BIND_IP: ${BIND_IP:-127.0.0.1}
     entrypoint: ["/usr/local/bin/seavan-init"]
     depends_on:
       db:

@@ -11,6 +11,9 @@ if($download && !sam_download_allowed($id)){throw new moodle_exception('mediauna
 if($download && ($_SERVER['REQUEST_METHOD'] ?? '') === 'GET' && empty($_SERVER['HTTP_RANGE'])){
     \local_seavanmedia\event\media_accessed::create(['context'=>context_course::instance($id),'other'=>['filekey'=>$file['key'],'action'=>'download']])->trigger();
 }
+if (!empty($CFG->seavanprotectedmedia) && in_array($file['kind'], ['video', 'audio'], true)) {
+    sam_send_protected_media($id, $file['key'], 'original', $file['path'], $file['mime']);
+}
 // Release the Moodle session lock before streaming so progress requests can run in parallel.
 \core\session\manager::write_close();
 header('X-Content-Type-Options: nosniff');

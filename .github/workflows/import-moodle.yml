@@ -53,7 +53,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          printf 'BIND_IP=127.0.0.1\nSITE_URL=http://127.0.0.1:8080\nADMIN_EMAIL=admin@example.invalid\nADMIN_PASSWORD=Aa1!%s\nDB_PASSWORD=%s\nDB_ROOT_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
+          pwsh -NoProfile -File ./start.ps1 -NonInteractive -PrepareOnly
+          grep -qx 'SEAVAN_PROTECTED_MEDIA=1' .env
+          sed -i 's/^SEAVAN_PROTECTED_MEDIA=1$/SEAVAN_PROTECTED_MEDIA=0/' .env
           mkdir -p "courses/CI Media Course/Chapter 1"
           if ! command -v ffmpeg >/dev/null; then sudo apt-get update && sudo apt-get install -y ffmpeg; fi
           ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=navy:s=320x180:r=5 -t 20 -c:v libx264 -pix_fmt yuv420p -movflags +faststart "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
@@ -66,7 +68,8 @@ jobs:
           printf 'WEBVTT\n\n00:00:00.000 --> 00:00:05.000\nSample subtitle\n' > "courses/CI Media Course/Chapter 1/02 - Browser.en.vtt"
           find courses -type f -exec touch -d '5 minutes ago' {} +
           touch -d '5 minutes ago' "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
-          docker compose up -d --build
+          pwsh -NoProfile -File ./start.ps1 -NonInteractive -NoBrowser
+          python3 tests/windows-first-login.py
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8080/login/index.php -o /tmp/login.html; then
               grep -Eq 'lang="fa(-[A-Za-z]+)?"' /tmp/login.html
@@ -148,6 +151,14 @@ jobs:
             echo 'The post-backup setting survived restore'
             exit 1
           fi
+      - name: Test packaged protected playback, quizzes and viewing report
+        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          sed -i 's/^SEAVAN_PROTECTED_MEDIA=0$/SEAVAN_PROTECTED_MEDIA=1/' .env
+          docker compose up -d --no-build --no-deps --force-recreate web
+          curl --retry 5 --retry-connrefused -fsS http://127.0.0.1:8080/login/index.php -o /tmp/protected-login.html
+          /tmp/seavan-browser/bin/python tests/protected-playback.py /tmp/security-fixture.json
       - name: Test secure HTTPS proxy-mode login
         if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
         run: |

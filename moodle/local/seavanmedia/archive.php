@@ -6,6 +6,7 @@ $folders=local_seavanmedia_folders();
 if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     require_sesskey();$action=required_param('action',PARAM_ALPHA);
     if($action==='policy'){
+        if (!empty($CFG->seavanprotectedmedia)) { throw new moodle_exception('invalidrequest'); }
         $c=get_course(required_param('id',PARAM_INT));
         if(!local_seavanmedia_is_course($c)){throw new moodle_exception('invalidrequest');}
         set_config('nodownload_'.$c->id,optional_param('blocked',0,PARAM_BOOL)?'1':'0','local_seavanmedia');
@@ -56,17 +57,19 @@ $table=new html_table();$table->head=['دوره','آرشیو','دانلود کا
 foreach($courses as $c){
     $folder=$folders[$c->idnumber]??null;
     if($folder&&str_starts_with($folder,$CFG->dataroot.'/seavan-uploads/')){$choices[$c->id]=$c->fullname;}
-    $blocked=get_config('local_seavanmedia','nodownload_'.$c->id)==='1';
-    $button=$OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['id'=>$c->id,'action'=>'policy','blocked'=>$blocked?0:1,'sesskey'=>sesskey()]),$blocked?'فعال کردن دانلود':'غیرفعال کردن دانلود','post');
+    $protected = !empty($CFG->seavanprotectedmedia);
+    $blocked = $protected || get_config('local_seavanmedia','nodownload_'.$c->id)==='1';
+    $button=$protected ? '' : $OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['id'=>$c->id,'action'=>'policy','blocked'=>$blocked?0:1,'sesskey'=>sesskey()]),$blocked?'فعال کردن دانلود':'غیرفعال کردن دانلود','post');
     if($section==='courses'){$table->data[]=[s($c->fullname),html_writer::tag('span',$folder?'متصل':'قطع یا نامشخص',['class'=>'sa-status '.($folder?'sa-ok':'sa-warn')]),html_writer::tag('span',$blocked?'ممنوع':'مجاز',['class'=>'sa-status '.($blocked?'sa-warn':'sa-ok')]).$button,html_writer::div(
         html_writer::link(new moodle_url('/course/edit.php',['id'=>$c->id]),'ویرایش و کاور') .
         html_writer::link(new moodle_url('/enrol/users.php',['id'=>$c->id]),'ثبت‌نام و دسترسی کاربران') .
-        ($folder ? html_writer::link(new moodle_url('/local/seavanmedia/downloads.php',['id'=>$c->id]),'فایل‌های قابل دانلود') : ''),
+        html_writer::link(new moodle_url('/local/seavanmedia/quizzes.php',['id'=>$c->id]),'آزمون‌های دوره') .
+        ($folder && !$protected ? html_writer::link(new moodle_url('/local/seavanmedia/downloads.php',['id'=>$c->id]),'فایل‌های قابل دانلود') : ''),
         'sa-archive-actions')];}
 }
 if($section==='courses'){
 if($table->data){echo html_writer::div(html_writer::table($table),'table-responsive');}else{echo html_writer::div('هنوز دوره‌ای در آرشیو ثبت نشده است.','seavan-empty');}
-echo html_writer::tag('p','محدودیت دانلود، دکمه‌ها و دانلود ZIP را غیرفعال می‌کند؛ جلوگیری قطعی از ذخیره جریان ویدیو توسط مرورگر نیست.');
+echo html_writer::tag('p', !empty($CFG->seavanprotectedmedia) ? 'دانلود و ZIP از سمت سرور برای همه حساب‌ها بسته است.' : 'مجوز دانلود فایل و ZIP کارکنان در همین صفحه قابل تنظیم است.');
 }
 if($section==='upload'){
 echo html_writer::tag('h3','بارگذاری مستقیم');

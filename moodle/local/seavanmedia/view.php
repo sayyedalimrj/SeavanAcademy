@@ -28,6 +28,10 @@ $PAGE->set_url(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$
 $PAGE->set_pagelayout(($CFG->theme ?? '') === 'seavan' ? 'seavanworkspace' : 'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title(format_string($course->fullname));$PAGE->set_heading(format_string($course->fullname));
 $PAGE->requires->css('/local/seavanmedia/style.css');
 $PAGE->requires->js_call_amd('local_seavanmedia/player','init');
+$protected = !empty($CFG->seavanprotectedmedia);
+if ($protected) {
+    $PAGE->requires->js_init_code("document.querySelector('.sam-player-wrap')?.addEventListener('contextmenu', event => event.preventDefault());");
+}
 $goto=fn($k)=>new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$k]);
 $digits=fn($n)=>strtr((string)$n,['0'=>'۰','1'=>'۱','2'=>'۲','3'=>'۳','4'=>'۴','5'=>'۵','6'=>'۶','7'=>'۷','8'=>'۸','9'=>'۹']);
 $fmt=fn($s)=>gmdate($s>=3600?'H:i:s':'i:s',(int)$s);
@@ -38,6 +42,7 @@ echo html_writer::start_div('sam');
 echo html_writer::start_div('sam-coursehead');
 echo html_writer::div(html_writer::link(new moodle_url('/course/index.php'),'بازگشت به کتابخانه'),'sam-crumb');
 echo html_writer::tag('h1',format_string($course->fullname),['class'=>'sam-course-title']);
+echo html_writer::link(new moodle_url('/local/seavanmedia/quizzes.php', ['id' => $id]), 'آزمون‌های دوره', ['class' => 'btn btn-outline-primary']);
 
 echo html_writer::end_div();
 if(!$files){echo html_writer::div('فایل‌های این دوره هنوز در مسیر سرور در دسترس نیستند.','alert alert-info');echo html_writer::end_div();echo $OUTPUT->footer();exit;}
@@ -69,7 +74,14 @@ if(in_array($f['kind'],['video','audio'],true)){
         $attrs['data-preview-url']=sam_asset_url($id,$key,'preview')->out(false);
         $attrs['data-preview-step']=$preview['step']??0;$attrs['data-preview-count']=$preview['count']??0;
     }
-    $sources=html_writer::empty_tag('source',['src'=>($useLow?sam_asset_url($id,$key,'low'):($converted?sam_asset_url($id,$key,'converted'):local_seavanmedia_url($id,$key)))->out(false),'type'=>($useLow||$converted)?'video/mp4':$f['mime']]);
+    $variant = $useLow ? 'low' : ($converted ? 'converted' : 'original');
+    $sourceurl = $variant === 'original' ? local_seavanmedia_url($id, $key) : sam_asset_url($id, $key, $variant);
+    if ($protected) {
+        $attrs['controlslist'] = 'nodownload noremoteplayback';
+        $attrs['disablepictureinpicture'] = 'disablepictureinpicture';
+        $sourceurl = sam_playback_url($sourceurl, $id, $key, $variant);
+    }
+    $sources = html_writer::empty_tag('source', ['src' => $sourceurl->out(false), 'type' => $variant === 'original' ? $f['mime'] : 'video/mp4']);
     // Match WebVTT sidecars by exact stem and optional language suffix.
     $stem=pathinfo($f['name'],PATHINFO_FILENAME);
     foreach($files as $subtitle){
@@ -86,7 +98,8 @@ if(in_array($f['kind'],['video','audio'],true)){
         $trackurl->param('track',1);
         $sources.=html_writer::empty_tag('track',['src'=>$trackurl->out(false),'kind'=>'subtitles','srclang'=>$lang,'label'=>$label]);
     }
-    echo html_writer::div(html_writer::tag($f['kind'],$sources.'مرورگر شما از این نوع رسانه پشتیبانی نمی‌کند.',$attrs),'sam-player-wrap');
+    $watermark = $protected ? html_writer::div('پخش آموزشی · ' . s(fullname($USER)), 'sam-watermark', ['aria-hidden' => 'true']) : '';
+    echo html_writer::div(html_writer::tag($f['kind'], $sources . 'مرورگر شما از این نوع رسانه پشتیبانی نمی‌کند.', $attrs) . $watermark, 'sam-player-wrap');
     if($low){echo html_writer::div(html_writer::tag('label','کیفیت '.html_writer::select(['default'=>'کیفیت اصلی / سازگار','low'=>'کم‌حجم (تا ۴۸۰p)'],'quality',$useLow?'low':'default',false,['id'=>'sam-quality','class'=>'custom-select']),[]),'sam-quality');}
     echo html_writer::start_div('sam-tools sam-playtools',['id'=>'sam-native-controls']);
     echo html_writer::tag('label','سرعت '.html_writer::select(['0.75'=>'۰٫۷۵','1'=>'۱×','1.25'=>'۱٫۲۵','1.5'=>'۱٫۵','1.75'=>'۱٫۷۵','2'=>'۲×'],'speed','1',false,['id'=>'sam-speed','class'=>'custom-select']),[]);
@@ -100,7 +113,7 @@ if(in_array($f['kind'],['video','audio'],true)){
 
 }elseif($f['kind']==='pdf'){
     echo html_writer::tag('iframe','',['src'=>local_seavanmedia_url($id,$key)->out(false),'class'=>'sam-pdf','title'=>s($f['title']),'loading'=>'lazy']);
-}else{echo html_writer::div('این فایل برای دانلود آماده است.','sam-muted');}
+}else{echo html_writer::div(sam_download_allowed($id) ? 'این فایل برای دانلود آماده است.' : 'دریافت این پیوست در این دوره غیرفعال است.', 'sam-muted');}
 echo html_writer::tag('h2',s($f['title']),['class'=>'sam-title sam-after-player','dir'=>'auto']);
 echo html_writer::tag('p',s($f['group']),['class'=>'sam-muted sam-group']);
 echo html_writer::start_div('sam-tools sam-filetools');

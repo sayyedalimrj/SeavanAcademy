@@ -19,7 +19,20 @@ if(!$instance){$instance=$DB->get_record('enrol',['id'=>$plugin->add_instance($c
 $role=$DB->get_record('role',['shortname'=>'student'],'*',MUST_EXIST);
 $plugin->enrol_user($instance,$id,$role->id);
 set_config('nodownload_'.$c->id,'1','local_seavanmedia');
+require_once($CFG->libdir.'/testing/generator/data_generator.php');
+$generator = new testing_data_generator();
+if (!$DB->record_exists('quiz', ['course' => $c->id, 'name' => 'CI Moodle Quiz'])) {
+    $generator->create_module('quiz', ['course' => $c->id, 'name' => 'CI Moodle Quiz']);
+}
+
 $files=local_seavanmedia_course_files($c);$key=array_key_first($files);
+$progress = ['userid' => $id, 'courseid' => $c->id, 'filekey' => $key];
+if (!$DB->record_exists('local_seavanmedia_progress', $progress)) {
+    $DB->insert_record('local_seavanmedia_progress', (object)($progress + [
+        'position' => 10, 'duration' => 20, 'rangesjson' => '[[0,9]]', 'percent' => 45, 'timemodified' => time(),
+    ]));
+}
+
 $otherfiles = local_seavanmedia_course_files($other);
 $otherkey = array_key_first($otherfiles);
 $small = ['a' => ['size' => 4], 'b' => ['size' => 5], 'c' => ['size' => 8], 'd' => ['size' => 25]];

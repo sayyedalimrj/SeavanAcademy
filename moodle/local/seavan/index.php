@@ -40,7 +40,7 @@ $add('moodle/site:config','مدیریت آرشیو','هاردها، بارگذا
 $add('moodle/site:config','صف پردازش','کارهای رسانه‌ای در انتظار و انجام‌شده','/local/seavanmedia/queue.php');
 $add('moodle/site:config','سلامت سرور','دیسک‌ها، دیتابیس و اجرای وظایف','/local/seavanmedia/server.php');
 $add('moodle/site:config','سلامت کتابخانه','کدک، مدت، کاور و پردازش فایل‌ها','/local/seavanmedia/health.php');
-$add('report/log:view','خلاصه استفاده','گزارش ساده دوره‌ها','/local/seavanmedia/report.php');
+$add('report/log:view','گزارش تماشای افراد','مدت و درصد مشاهده هر کاربر به تفکیک جلسه','/local/seavanmedia/report.php');
 $add('moodle/site:config', 'ظاهر و فونت', 'بارگذاری ایران‌سنس دارای مجوز', '/admin/settings.php', ['section'=>'themesettingseavan']);
 $add('moodle/site:config', 'تنظیمات سامانه', 'افزونه‌ها، امنیت و تنظیمات اصلی Moodle', '/admin/search.php');
 if ($view === 'manage' && has_capability('moodle/site:config', $context) && (int)(get_admin()->id ?? 0) === (int)$USER->id) {
@@ -145,7 +145,7 @@ if ($view === 'manage') {
         'دوره‌ها و فایل‌ها' => ['i/folder', ['مدیریت آرشیو','ورود خودکار دوره‌ها','دوره‌ها و دسته‌بندی','افزودن دوره','درخواست‌های آموزش']],
         'کارکنان و دسترسی' => ['i/users', ['کاربران','افزودن همکار','افزودن گروهی کاربران','گروه‌های آموزشی']],
         'آماده‌سازی رسانه' => ['i/course', ['سلامت کتابخانه','صف پردازش']],
-        'گزارش و نگهداری' => ['i/report', ['خلاصه استفاده','گزارش فعالیت','سلامت سرور','ظاهر و فونت','تنظیمات سامانه']],
+        'گزارش و نگهداری' => ['i/report', ['گزارش تماشای افراد','گزارش فعالیت','سلامت سرور','ظاهر و فونت','تنظیمات سامانه']],
     ];
     $actionsbylabel = array_column($actions, null, 0);
     echo html_writer::start_div('seavan-actions');

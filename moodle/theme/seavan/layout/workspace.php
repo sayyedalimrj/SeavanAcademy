@@ -31,7 +31,7 @@ $menu = $primary->export_for_template($OUTPUT);
 $active = $PAGE->url->get_path();
 $view = optional_param('view','home',PARAM_ALPHA);
 $islearningmedia = str_contains($active, '/local/seavanmedia/') &&
-    in_array(basename($active), ['view.php', 'downloads.php', 'request.php'], true);
+    in_array(basename($active), ['view.php', 'downloads.php', 'request.php', 'quizzes.php'], true);
 $manage = has_capability('moodle/site:config', context_system::instance()) ||
     has_capability('moodle/site:uploadusers', context_system::instance()) ||
     has_capability('moodle/user:create', context_system::instance()) ||

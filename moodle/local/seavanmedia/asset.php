@@ -14,6 +14,12 @@ if($type==='preview'){
 if(!isset($map[$type])){send_file_not_found();}
 [$name,$mime]=$map[$type];$p=sam_asset_dir($id,$f['key']).'/'.$name;
 if(!is_file($p)){send_file_not_found();}
+if (!empty($CFG->seavanprotectedmedia) && in_array($type, ['converted', 'low'], true)) {
+    if (optional_param('download', false, PARAM_BOOL)) {
+        send_file_not_found();
+    }
+    sam_send_protected_media($id, $f['key'], $type, $p, $mime);
+}
 \core\session\manager::write_close();
 header('X-Content-Type-Options: nosniff');
 send_file($p,$name,60,0,false,false,$mime,false,['cacheability'=>'private']);
