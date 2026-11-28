@@ -118,12 +118,12 @@ with sync_playwright() as runner:
     student.get_by_role('link', name=re.compile(r'CI Instructor')).click()
     expect(student.locator('body')).to_contain_text('CI Subject')
     student.locator('a[href*="/mod/feedback/complete.php"]').first.click()
-    expect(student.locator('input[type=radio]')).to_have_count(100)
+    expect(student.locator('input[type=radio][name^=multichoicerated_]')).to_have_count(100)
     expect(student.locator('body')).to_contain_text('تسلط و احاطه بر موضوع درس')
     expect(student.locator('body')).to_contain_text('امکان دسترسی به استاد')
     student.evaluate("""() => {
         const selected = new Set();
-        for (const input of document.querySelectorAll('input[type=radio]')) {
+        for (const input of document.querySelectorAll('input[type=radio][name^=multichoicerated_]')) {
             if (!selected.has(input.name)) {
                 input.click();
                 selected.add(input.name);
@@ -137,4 +137,12 @@ with sync_playwright() as runner:
     admin.get_by_role('link', name='نتایج').click()
     expect(admin.locator('body')).to_contain_text('تسلط و احاطه بر موضوع درس')
     expect(admin.locator('body')).not_to_contain_text('CI Unstarted')
+    student.goto(origin + '/request.php?contact=1')
+    student.locator('#sam-request-title').fill('CI message to manager')
+    student.locator('#sam-request-body').fill('CI native notification')
+    student.get_by_role('button', name='ارسال پیام').click()
+    admin.goto(origin + '/requests.php?filter=all')
+    expect(admin.locator('#region-main')).to_contain_text('CI message to manager')
+    expect(admin.locator('#region-main')).to_contain_text('CI native notification')
+    print('PASS: message reaches the manager via native Moodle notifications.', flush=True)
     print('PASS: real Moodle quiz navigation, 20-question submission, duplicate prevention and anonymous results.', flush=True)
