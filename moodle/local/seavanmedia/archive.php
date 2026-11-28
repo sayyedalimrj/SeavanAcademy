@@ -5,6 +5,7 @@ $url=new moodle_url('/local/seavanmedia/archive.php');
 $folders=local_seavanmedia_folders();
 if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     require_sesskey();$action=required_param('action',PARAM_ALPHA);
+    $notice = 'تنظیم یا درخواست ثبت شد.';
     if($action==='policy'){
         if (!empty($CFG->seavanprotectedmedia)) { throw new moodle_exception('invalidrequest'); }
         $c=get_course(required_param('id',PARAM_INT));
@@ -31,6 +32,9 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
             str_starts_with($name,'.')||file_exists($folder.'/'.$name)||disk_free_space($root)<$f['size']+1073741824){throw new moodle_exception('invalidrequest');}
         if(!move_uploaded_file($f['tmp_name'],$folder.'/'.$name)){throw new moodle_exception('invalidrequest');}
         touch($folder.'/'.$name,time()-180);
+        $coursekey = $id ? $c->idnumber : local_seavanmedia_idnumber('uploads/' . basename($folder));
+        $outcome = local_seavanmedia_sync($coursekey);
+        $notice = s($outcome[0] ?? $notice);
     }elseif($action==='hashall'){
         $c=get_course(required_param('id',PARAM_INT));
         foreach(local_seavanmedia_course_files($c) as $f){$p=sam_asset_dir($c->id,$f['key']).'/sha256.json';if(!is_file($p)){sam_queue($c->id,$f,'hash');}}
@@ -39,7 +43,7 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
         sam_queue($c->id,$f,'hash');
     }else{throw new moodle_exception('invalidrequest');}
     $target=$action==='upload'?'upload':(in_array($action,['hash','hashall'],true)?'versions':'courses');
-    redirect(new moodle_url('/local/seavanmedia/archive.php',['section'=>$target]+($target==='versions'?['course'=>$c->id]:[])),'تنظیم یا درخواست ثبت شد.');
+    redirect(new moodle_url('/local/seavanmedia/archive.php',['section'=>$target]+($target==='versions'?['course'=>$c->id]:[])), $notice);
 }
 $PAGE->set_context(context_system::instance());$PAGE->set_url($url);$PAGE->set_pagelayout(($CFG->theme??'')==='seavan'?'seavanworkspace':'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title('مدیریت آرشیو');$PAGE->set_heading('مدیریت آرشیو');
 echo $OUTPUT->header();
@@ -62,7 +66,7 @@ foreach($courses as $c){
     $button=$protected ? '' : $OUTPUT->single_button(new moodle_url('/local/seavanmedia/archive.php',['id'=>$c->id,'action'=>'policy','blocked'=>$blocked?0:1,'sesskey'=>sesskey()]),$blocked?'فعال کردن دانلود':'غیرفعال کردن دانلود','post');
     if($section==='courses'){$table->data[]=[s($c->fullname),html_writer::tag('span',$folder?'متصل':'قطع یا نامشخص',['class'=>'sa-status '.($folder?'sa-ok':'sa-warn')]),html_writer::tag('span',$blocked?'ممنوع':'مجاز',['class'=>'sa-status '.($blocked?'sa-warn':'sa-ok')]).$button,html_writer::div(
         html_writer::link(new moodle_url('/course/edit.php',['id'=>$c->id]),'ویرایش و کاور') .
-        html_writer::link(new moodle_url('/enrol/users.php',['id'=>$c->id]),'ثبت‌نام و دسترسی کاربران') .
+        html_writer::link(new moodle_url('/user/index.php',['id'=>$c->id]),'ثبت‌نام و دسترسی کاربران') .
         html_writer::link(new moodle_url('/local/seavanmedia/quizzes.php',['id'=>$c->id]),'آزمون‌های دوره') .
         ($folder && !$protected ? html_writer::link(new moodle_url('/local/seavanmedia/downloads.php',['id'=>$c->id]),'فایل‌های قابل دانلود') : ''),
         'sa-archive-actions')];}

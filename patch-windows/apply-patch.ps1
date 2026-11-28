@@ -14,7 +14,7 @@ if ($current -notin @($manifest.base, $manifest.release)) {
 }
 $changed = @()
 foreach ($file in $manifest.files) {
-    if ($file.path -cnotmatch '^moodle/(?:course/view[.]php|(?:local/seavan(?:media)?/|theme/seavan/)[a-z0-9_/]+[.](?:php|css|js))$' -and $file.path -cne 'windows-native/academy.ps1') {
+    if ($file.path -cnotmatch '^moodle/(?:course/view[.]php|(?:local/seavan(?:media)?/|theme/seavan/)[a-z0-9_/]+[.](?:php|css|js))$' -and $file.path -cnotin @('windows-native/academy.ps1', 'windows-native/moodle-config.php')) {
         throw "Unexpected patch path: $($file.path)"
     }
     $source = Join-Path (Join-Path $PSScriptRoot 'payload') $file.path

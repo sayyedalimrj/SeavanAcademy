@@ -1,6 +1,7 @@
 (function() {
     function attach() {
-        const video = document.getElementById('sam-player');
+        const player = document.getElementById('sam-player');
+        const video = player instanceof HTMLMediaElement ? player : player?.querySelector('video, audio');
         const host = document.querySelector('[data-sa-checkpoints]');
         if (!video || !host) {
             return;
@@ -23,9 +24,13 @@
         rows.sort((a, b) => Number(a.dataset.seconds) - Number(b.dataset.seconds));
         video.addEventListener('timeupdate', () => {
             const current = video.currentTime;
+            if (video.seeking) {
+                lastTime = current;
+                return;
+            }
             const due = rows.find(row => row.hidden && row.dataset.timing === 'during' &&
                 lastTime < Number(row.dataset.seconds) && current >= Number(row.dataset.seconds));
-            if (due && !video.seeking) {
+            if (due) {
                 show(due, true);
             }
             lastTime = current;

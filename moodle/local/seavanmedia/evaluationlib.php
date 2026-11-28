@@ -50,7 +50,7 @@ function local_seavanmedia_create_evaluation(stdClass $course, string $instructo
         }
         $description = html_writer::tag('p', 'استاد: ' . s($instructor)) .
             html_writer::tag('p', 'درس: ' . s($subject)) .
-            html_writer::tag('p', 'دوره: ' . s(format_string($course->fullname, true, ['context' => $context]))) .
+            html_writer::tag('p', 'دوره: ' . s($course->fullname)) .
             html_writer::tag('p', 'برای هر شاخص، یک گزینه انتخاب کنید.');
         $transaction = $DB->start_delegated_transaction();
         try {
@@ -62,6 +62,8 @@ function local_seavanmedia_create_evaluation(stdClass $course, string $instructo
                 'name' => 'ارزیابی استاد · ' . $instructor . ' · ' . $subject,
                 'cmidnumber' => $idnumber,
                 'introeditor' => ['text' => $description, 'format' => FORMAT_HTML, 'itemid' => 0],
+                'page_after_submit' => 'ارزیابی شما ثبت شد.',
+                'page_after_submitformat' => FORMAT_PLAIN,
                 'page_after_submit_editor' => ['text' => 'ارزیابی شما ثبت شد.', 'format' => FORMAT_PLAIN, 'itemid' => 0],
                 'anonymous' => FEEDBACK_ANONYMOUS_YES,
                 'multiple_submit' => 0,

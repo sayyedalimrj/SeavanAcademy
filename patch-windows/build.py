@@ -11,7 +11,7 @@ BASE = '136196ebbd75f41a14963296eae285a854fdd7df'
 FILES = tuple(subprocess.check_output([
     'git', 'diff', '--name-only', '--diff-filter=AM', BASE, 'HEAD', '--',
     'moodle/course/view.php', 'moodle/local/seavan', 'moodle/local/seavanmedia',
-    'moodle/theme/seavan', 'windows-native/academy.ps1',
+    'moodle/theme/seavan', 'windows-native/academy.ps1', 'windows-native/moodle-config.php',
 ], text=True).splitlines())
 FOLDER = 'SeavanAcademy_Patch_1.3'
 parser = argparse.ArgumentParser()

@@ -40,7 +40,7 @@ $CFG->timezone = 'Asia/Tehran';
 $CFG->task_scheduled_concurrency_limit = 1;
 $CFG->task_adhoc_concurrency_limit = 1;
 $CFG->scheduled_tasks = [
-    '\\local_seavanmedia\\task\\discover' => ['disabled' => 1],
+    '\\local_seavanmedia\\task\\discover' => ['schedule' => '*/15 * * * *', 'disabled' => 0],
     '\\local_seavanmedia\\task\\prepare' => ['disabled' => 1],
 ];
 unset($settings, $statepath, $coursefolder);

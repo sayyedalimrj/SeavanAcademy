@@ -143,7 +143,7 @@ function local_seavanmedia_get_file($course,string $key): array {
     $files = local_seavanmedia_course_files($course);
     if (!isset($files[$key])) { throw new moodle_exception('mediaunavailable','local_seavanmedia'); }
     $access = sam_session_visibility($course);
-    if (isset($access[sam_session_id($files[$key])]) && !$access[sam_session_id($files[$key])]) {
+    if (!($access[sam_session_id($files[$key])] ?? true)) {
         throw new moodle_exception('mediaunavailable', 'local_seavanmedia');
     }
     $folder = local_seavanmedia_folders()[$course->idnumber] ?? '';
@@ -199,7 +199,7 @@ function sam_record_revision(int $id,array $files): void {
     sam_write_json($dir.'/'.time().'-'.substr($hash,0,12).'.json',$record);
     sam_write_json($dir.'/latest.json',$record);
 }
-function local_seavanmedia_sync(): array {
+function local_seavanmedia_sync(?string $onlyid = null): array {
     global $CFG,$DB;
     require_once($CFG->dirroot.'/course/lib.php');
     require_once($CFG->dirroot.'/course/modlib.php');
@@ -209,6 +209,9 @@ function local_seavanmedia_sync(): array {
     if (!$lock) { return ['همگام‌سازی دیگری در حال اجراست.']; }
     try {
         $folders = local_seavanmedia_folders();
+        if ($onlyid !== null) {
+            $folders = array_intersect_key($folders, [$onlyid => true]);
+        }
         if (!$folders) { return ['پوشه‌ای در مسیر کتابخانه موجود نیست؛ هیچ دوره‌ای حذف نشد.']; }
         $cat = $DB->get_record('course_categories',['idnumber'=>'seavan-media-library']);
         if (!$cat) { $cat = core_course_category::create((object)['name'=>'کتابخانه ویدئویی شرکت','idnumber'=>'seavan-media-library']); }
