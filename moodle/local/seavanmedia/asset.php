@@ -5,10 +5,21 @@ $id=required_param('id',PARAM_INT);
 $course=local_seavanmedia_require_course($id);
 $f=local_seavanmedia_get_file($course,required_param('file',PARAM_ALPHANUM));
 $type=required_param('type',PARAM_ALPHA);
-$map=['cover'=>['cover.jpg','image/jpeg'],'converted'=>['converted.mp4','video/mp4']];
+$map=['cover'=>['cover.jpg','image/jpeg'],'converted'=>['converted.mp4','video/mp4'],'low'=>['480.mp4','video/mp4']];
+if($type==='preview'){
+    $frame=required_param('frame',PARAM_INT);
+    if($frame<0||$frame>=24){send_file_not_found();}
+    $map['preview']=['preview-'.$frame.'.jpg','image/jpeg'];
+}
 if(!isset($map[$type])){send_file_not_found();}
 [$name,$mime]=$map[$type];$p=sam_asset_dir($id,$f['key']).'/'.$name;
 if(!is_file($p)){send_file_not_found();}
+if (!empty($CFG->seavanprotectedmedia) && in_array($type, ['converted', 'low'], true)) {
+    if (optional_param('download', false, PARAM_BOOL)) {
+        send_file_not_found();
+    }
+    sam_send_protected_media($id, $f['key'], $type, $p, $mime);
+}
 \core\session\manager::write_close();
 header('X-Content-Type-Options: nosniff');
 send_file($p,$name,60,0,false,false,$mime,false,['cacheability'=>'private']);

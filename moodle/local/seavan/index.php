@@ -13,6 +13,8 @@ if (isguestuser()) {
 $context = context_system::instance();
 $view = $seavanroute ?? optional_param('view', 'home', PARAM_ALPHA);
 if (!in_array($view, ['home','mine','catalog','manage'], true)) { $view = 'home'; }
+// Home is an alias of the main library; there is no duplicate destination in the menu.
+if ($view === 'home') { $view = 'catalog'; }
 $query = trim(optional_param('q', '', PARAM_TEXT));
 $favonly=optional_param('favorites',0,PARAM_BOOL);
 $categoryid = optional_param('category', $seavancategory ?? 0, PARAM_INT);
@@ -25,7 +27,7 @@ $add = function($capability, $label, $detail, $path, $params = []) use (&$action
 };
 $add('moodle/user:create', 'افزودن همکار', 'ساخت حساب کاربری جدید', '/user/editadvanced.php', ['id'=>-1]);
 $add('moodle/user:update', 'کاربران', 'جست‌وجو و ویرایش حساب‌ها', '/admin/user.php');
-$add('moodle/site:uploadusers', 'افزودن گروهی کاربران', 'ورود فهرست CSV کارکنان', '/admin/tool/uploaduser/index.php');
+$add('moodle/site:uploadusers', 'افزودن گروهی کاربران', 'ورود فهرست Excel یا CSV کارکنان', '/local/seavanmedia/employees.php');
 $add('moodle/category:manage', 'دوره‌ها و دسته‌بندی', 'ساخت دوره، ویرایش و مرتب‌سازی', '/course/management.php');
 $defaultcategory = core_course_category::get_default();
 if ($defaultcategory && has_capability('moodle/course:create', context_coursecat::instance($defaultcategory->id))) {
@@ -34,10 +36,16 @@ if ($defaultcategory && has_capability('moodle/course:create', context_coursecat
 $add('moodle/cohort:manage', 'گروه‌های آموزشی', 'مدیریت گروه‌های همکاران', '/cohort/index.php');
 $add('report/log:view', 'گزارش فعالیت', 'گزارش‌های استاندارد مودل', '/report/log/index.php', ['id'=>SITEID]);
 if (function_exists('local_seavanmedia_sync')) { $add('moodle/site:config','ورود خودکار دوره‌ها','شناسایی پوشه‌ها و ساخت دوره','/local/seavanmedia/sync.php'); }
+$add('moodle/site:config','مدیریت آرشیو','هاردها، بارگذاری و مجوز دانلود','/local/seavanmedia/archive.php');
+$add('moodle/site:config','صف پردازش','کارهای رسانه‌ای در انتظار و انجام‌شده','/local/seavanmedia/queue.php');
+$add('moodle/site:config','سلامت سرور','دیسک‌ها، دیتابیس و اجرای وظایف','/local/seavanmedia/server.php');
 $add('moodle/site:config','سلامت کتابخانه','کدک، مدت، کاور و پردازش فایل‌ها','/local/seavanmedia/health.php');
-$add('report/log:view','خلاصه استفاده','گزارش ساده دوره‌ها','/local/seavanmedia/report.php');
+$add('report/log:view','گزارش تماشای افراد','مدت و درصد مشاهده هر کاربر به تفکیک جلسه','/local/seavanmedia/report.php');
 $add('moodle/site:config', 'ظاهر و فونت', 'بارگذاری ایران‌سنس دارای مجوز', '/admin/settings.php', ['section'=>'themesettingseavan']);
-$add('moodle/site:config', 'تنظیمات سامانه', 'پشتیبان‌گیری، افزونه‌ها و سایر تنظیمات', '/admin/search.php');
+$add('moodle/site:config', 'تنظیمات سامانه', 'افزونه‌ها، امنیت و تنظیمات اصلی Moodle', '/admin/search.php');
+if ($view === 'manage' && has_capability('moodle/site:config', $context) && (int)(get_admin()->id ?? 0) === (int)$USER->id) {
+    $add('moodle/site:config', 'درخواست‌های آموزش', 'خواندن درخواست‌های کارکنان و پاسخ در Moodle', '/local/seavanmedia/requests.php');
+}
 if (!$actions && $view === 'manage') {
     require_capability('moodle/site:config', $context);
 }
@@ -49,9 +57,9 @@ $PAGE->add_body_class('seavan-workspace');
 $PAGE->set_title('آکادمی سیوان');
 $PAGE->set_heading('آکادمی سیوان');
 
-$categories = core_course_category::get_all();
-$mine = enrol_get_my_courses();
-$lastaccess = $DB->get_records('user_lastaccess', ['userid'=>$USER->id], 'timeaccess DESC', 'courseid,timeaccess');
+$categories = $view === 'manage' ? [] : core_course_category::get_all();
+$mine = $view === 'manage' ? [] : enrol_get_my_courses();
+$lastaccess = $mine ? $DB->get_records('user_lastaccess', ['userid'=>$USER->id], 'timeaccess DESC', 'courseid,timeaccess') : [];
 $enrolled = [];
 foreach ($mine as $item) {
     $course = get_course($item->id);
@@ -67,7 +75,7 @@ foreach ($mine as $item) {
 }
 uasort($enrolled, fn($a,$b)=>$b['last'] <=> $a['last']);
 $digits = fn($n)=>strtr((string)$n, ['0'=>'۰','1'=>'۱','2'=>'۲','3'=>'۳','4'=>'۴','5'=>'۵','6'=>'۶','7'=>'۷','8'=>'۸','9'=>'۹']);
-$tabs = ['home'=>'خانه','catalog'=>'کتابخانه آموزش‌ها','mine'=>'دوره‌های من'];
+$tabs = ['catalog'=>'آموزش‌ها','mine'=>'یادگیری من'];
 if ($actions) { $tabs['manage'] = 'مدیریت'; }
 $go = fn($v)=>$v==='manage' ? new moodle_url('/local/seavan/index.php',['view'=>'manage']) : new moodle_url(match($v){'home'=>'/my/index.php','mine'=>'/my/courses.php','catalog'=>'/course/index.php'});
 echo $OUTPUT->header();
@@ -79,12 +87,17 @@ foreach ($tabs as $key=>$label) {
 }
 echo html_writer::end_tag('nav');
 }
-if ($view === 'home') {
-    echo html_writer::start_div('seavan-hero');
-    echo html_writer::tag('h2','سلام، ' . s($USER->firstname) . '!');
-    echo html_writer::tag('p','به فضای یادگیری سیوان خوش آمدید.');
-    echo html_writer::link($go('catalog'),'مشاهده آموزش‌ها',['class'=>'btn btn-light']);
+if ($view === 'catalog' && $query === '' && !$categoryid && !$favonly) {
+    echo html_writer::start_div('sa-welcome');
+    echo html_writer::tag('span','SEAVAN ACADEMY',['class'=>'sa-kicker','lang'=>'en','dir'=>'ltr']);
+    echo html_writer::tag('h1','سلام، '.s($USER->firstname).'!');
+    echo html_writer::tag('p','آموزش موردنیازت رو پیدا کن و با سرعت خودت یاد بگیر.');
+    echo html_writer::div('', 'sa-hero-art',['aria-hidden'=>'true']);
     echo html_writer::end_div();
+}
+if ($view==='mine' && $query==='' && !$categoryid && !$favonly) {
+    echo html_writer::tag('h1','فضای یادگیری من',['class'=>'sa-page-title']);
+    echo html_writer::tag('p','دوره‌های اختصاص‌یافته، علاقه‌مندی‌ها و ادامه تماشا.',['class'=>'seavan-note']);
     if (function_exists('local_seavanmedia_is_course')) {
         $recent = $DB->get_records('local_seavanmedia_progress',['userid'=>$USER->id],'timemodified DESC','*',0,40);
         foreach ($recent as $row) {
@@ -95,6 +108,8 @@ if ($view === 'home') {
             if (!$file || $row->percent >= 95) { continue; }
             $resume = new moodle_url('/local/seavanmedia/view.php',['id'=>$course->id,'file'=>$row->filekey]);
             echo html_writer::start_div('seavan-resume');
+            $thumb=is_file(sam_asset_dir($course->id,$row->filekey).'/cover.jpg')?html_writer::empty_tag('img',['src'=>sam_asset_url($course->id,$row->filekey,'cover')->out(false),'alt'=>'']):html_writer::tag('span','▶',['aria-hidden'=>'true']);
+            echo html_writer::div($thumb,'sa-resume-thumb');
             echo html_writer::start_div('seavan-resume-copy');
             echo html_writer::tag('span','آخرین آموزش نیمه‌تمام',['class'=>'seavan-eyebrow']);
             echo html_writer::tag('h3',s($file['title']));
@@ -108,58 +123,59 @@ if ($view === 'home') {
     }
 }
 if ($view === 'manage') {
-    echo html_writer::tag('h2','مدیریت آموزش',['class'=>'seavan-section']);
-    echo html_writer::tag('p','کاربران، دوره‌ها و فایل‌های آموزشی در یک جا.',['class'=>'seavan-note']);
+    echo html_writer::tag('h1','مرکز مدیریت',['class'=>'sa-page-title']);
+    if (has_capability('moodle/site:config', $context)) {
+        $metrics = [
+            'دوره‌های فعال' => $DB->count_records_select('course', 'id <> :site AND visible = 1', ['site' => SITEID]),
+            'حساب‌های فعال' => $DB->count_records_select('user', 'deleted = 0 AND suspended = 0 AND username <> :guest', ['guest' => 'guest']),
+        ];
+        if ((int)(get_admin()->id ?? 0) === (int)$USER->id) {
+            $metrics['درخواست‌های خوانده‌نشده'] = $DB->count_records_select('notifications',
+                'useridto = :user AND component = :component AND eventtype = :event AND timeread IS NULL',
+                ['user' => $USER->id, 'component' => 'local_seavanmedia', 'event' => 'courserequest']);
+        }
+        echo html_writer::start_div('sa-metrics');
+        foreach ($metrics as $label => $value) {
+            echo html_writer::div(html_writer::tag('strong', $digits($value)) . html_writer::tag('span', s($label)), 'sa-metric');
+        }
+        echo html_writer::end_div();
+    }
 
     $groups = [
-        'محتوای آموزشی'=>['ورود خودکار دوره‌ها','افزودن دوره','دوره‌ها و دسته‌بندی','سلامت کتابخانه'],
-        'کاربران و دسترسی'=>['افزودن همکار','کاربران','افزودن گروهی کاربران','گروه‌های آموزشی'],
-        'گزارش و تنظیمات'=>['خلاصه استفاده','گزارش فعالیت','ظاهر و فونت','تنظیمات سامانه'],
+        'دوره‌ها و فایل‌ها' => ['i/folder', ['مدیریت آرشیو','ورود خودکار دوره‌ها','دوره‌ها و دسته‌بندی','افزودن دوره','درخواست‌های آموزش']],
+        'کارکنان و دسترسی' => ['i/users', ['کاربران','افزودن همکار','افزودن گروهی کاربران','گروه‌های آموزشی']],
+        'آماده‌سازی رسانه' => ['i/course', ['سلامت کتابخانه','صف پردازش']],
+        'گزارش و نگهداری' => ['i/report', ['گزارش تماشای افراد','گزارش فعالیت','سلامت سرور','ظاهر و فونت','تنظیمات سامانه']],
     ];
+    $actionsbylabel = array_column($actions, null, 0);
     echo html_writer::start_div('seavan-actions');
-    foreach ($groups as $heading=>$labels) {
+    foreach ($groups as $heading => [$icon, $labels]) {
         $rows = '';
-        foreach ($labels as $wanted) {
-            foreach ($actions as [$label,$detail,$link]) {
-                if ($label !== $wanted) { continue; }
-                $rows .= html_writer::link($link,html_writer::tag('span',s($label)).html_writer::tag('small',s($detail)),['class'=>'sa-admin-link']);
+        foreach ($labels as $label) {
+            if (isset($actionsbylabel[$label])) {
+                [, $detail, $link] = $actionsbylabel[$label];
+                $rows .= html_writer::link($link, html_writer::tag('span', s($label)) .
+                    html_writer::tag('small', s($detail)), ['class' => 'sa-admin-link']);
             }
         }
-        if ($rows) { echo html_writer::div(html_writer::tag('h3',$heading).$rows,'sa-admin-panel'); }
+        if ($rows !== '') {
+            $symbol = html_writer::tag('span', $OUTPUT->pix_icon($icon, ''), ['class' => 'sa-group-icon', 'aria-hidden' => 'true']);
+            $headinghtml = html_writer::div($symbol . html_writer::tag('h2', s($heading)), 'sa-admin-heading');
+            echo html_writer::div($headinghtml . $rows, 'sa-admin-panel');
+        }
     }
     echo html_writer::end_div();
     echo html_writer::start_tag('details',['class'=>'sa-advanced']);
     echo html_writer::tag('summary','امکانات پیشرفته Moodle');
     echo html_writer::div(html_writer::link(new moodle_url('/my/index.php',['classic'=>1]),'داشبورد کامل').' · '.html_writer::link(new moodle_url('/course/index.php',['classic'=>1]),'فهرست کامل دوره‌ها'));
     echo html_writer::end_tag('details');
-    // Course-scoped actions are guarded individually, including category-scoped managers.
-    $all = core_course_category::top()->get_courses(['recursive'=>true]);
-    $rows = '';
-    foreach ($all as $item) {
-        $ctx = context_course::instance($item->id);
-        $links = [];
-        if (has_capability('moodle/course:update',$ctx)) {
-            $links[] = html_writer::link(new moodle_url('/course/edit.php',['id'=>$item->id]),'تنظیمات');
-        }
-        if (has_capability('moodle/course:enrolreview',$ctx)) {
-            $links[] = html_writer::link(new moodle_url('/user/index.php',['id'=>$item->id]),'شرکت‌کنندگان');
-        }
-        if (has_capability('report/log:view',$ctx)) {
-            $links[] = html_writer::link(new moodle_url('/report/log/index.php',['id'=>$item->id]),'گزارش');
-        }
-        if (!$links) { continue; }
-        $name = format_string($item->fullname,true,['context'=>$ctx]);
-        $rows .= html_writer::tag('tr',html_writer::tag('td',html_writer::link(new moodle_url('/course/view.php',['id'=>$item->id,'classic'=>1]),$name)) .
-            html_writer::tag('td',implode(' · ',$links)));
-    }
-    if ($rows) {
-        echo html_writer::tag('h2','مدیریت سریع دوره‌ها',['class'=>'seavan-section']);
-        echo html_writer::div(html_writer::tag('table',html_writer::tag('thead',html_writer::tag('tr',html_writer::tag('th','دوره',['scope'=>'col']) . html_writer::tag('th','عملیات',['scope'=>'col']))) . html_writer::tag('tbody',$rows),['class'=>'table table-hover']), 'table-responsive');
-    }
 } else {
     $showcatalog = $view === 'catalog' || ($view === 'home' && !$enrolled);
-    $title = $showcatalog ? 'کتابخانه آموزش‌ها' : ($view === 'home' ? 'آموزش‌های شما' : 'دوره‌های من');
+    $title = $showcatalog ? 'کتابخانه' : 'دوره‌های اختصاص‌یافته';
+    echo html_writer::start_div('sa-title-row');
     echo html_writer::tag('h2',$title,['class'=>'seavan-section']);
+    if($view==='catalog'){echo html_writer::link(new moodle_url('/local/seavanmedia/request.php'),'درخواست آموزش',['class'=>'sa-subtle-link']);}
+    echo html_writer::end_div();
     echo html_writer::start_tag('form',['method'=>'get','action'=>$url->out(false),'class'=>'seavan-search']);
     echo html_writer::empty_tag('input',['type'=>'hidden','name'=>'view','value'=>$view]);
     echo html_writer::empty_tag('input',['type'=>'search','name'=>'q','value'=>$query,'placeholder'=>$view==='catalog'?'جست‌وجوی دوره، جلسه یا فایل':'جست‌وجوی دوره','aria-label'=>'جست‌وجوی آموزش','class'=>'form-control']);
@@ -167,12 +183,15 @@ if ($view === 'manage') {
     foreach ($categories as $cat) { $options[$cat->id] = format_string($cat->name,true,['context'=>context_coursecat::instance($cat->id)]); }
     echo html_writer::select($options,'category',$categoryid,false,['class'=>'custom-select','aria-label'=>'دسته‌بندی']);
     echo html_writer::tag('label',html_writer::empty_tag('input',['type'=>'checkbox','name'=>'favorites','value'=>1]+($favonly?['checked'=>'checked']:[])).' علاقه‌مندی‌ها',['class'=>'seavan-note']);
-    echo html_writer::tag('button','جست‌وجو',['type'=>'submit','class'=>'btn btn-outline-primary']);
+    echo html_writer::tag('button','جست‌وجو',['type'=>'submit','class'=>'btn btn-primary']);
+    if($query!==''||$categoryid||$favonly){echo html_writer::link($url,'پاک کردن',['class'=>'sa-subtle-link']);}
     echo html_writer::end_tag('form');
     $items = $showcatalog
         ? core_course_category::top()->get_courses(['recursive'=>true])
         : array_map(fn($r)=>$r['course'],$enrolled);
     $count = 0;
+    $offset=max(0,optional_param('page',0,PARAM_INT))*24;
+    $matched=0;
     $sessionmatches = [];
     $normal = fn($s)=>function_exists('local_seavanmedia_normalize')?local_seavanmedia_normalize(core_text::strtolower($s)):core_text::strtolower($s);
     $needle = $normal($query);
@@ -201,7 +220,8 @@ if ($view === 'manage') {
             }
         }
         if ($query !== '' && core_text::strpos($normal(strip_tags($name)),$needle) === false) { continue; }
-        if ($view === 'home' && $count >= 6) { break; }
+        $matched++;
+        if ($matched <= $offset || $count>=24) { continue; }
         $count++;
         $cat = $categories[$item->category] ?? null;
         $catname = $cat ? format_string($cat->name,true,['context'=>context_coursecat::instance($cat->id)]) : 'آموزش سازمانی';
@@ -222,11 +242,14 @@ if ($view === 'manage') {
                 }
             }
         }
-        if (!$cover) { $cover = html_writer::tag('span','▶',['class'=>'seavan-course-symbol','aria-hidden'=>'true']); }
+        if (!$cover) { $cover = html_writer::div(html_writer::tag('span','SEAVAN ACADEMY',['class'=>'sa-cover-brand','lang'=>'en','dir'=>'ltr']).html_writer::tag('span',$catname,['class'=>'sa-cover-category']).html_writer::tag('span','▶',['class'=>'seavan-course-symbol','aria-hidden'=>'true']),'sa-cover-fallback'); }
+        $courseurl=new moodle_url('/course/view.php',['id'=>$item->id]);
         echo html_writer::start_div('seavan-course');
-        echo html_writer::div($cover,'seavan-course-cover');
-        echo html_writer::tag('span',$catname,['class'=>'seavan-course-label']);
-        echo html_writer::tag('h3',$name);
+        echo html_writer::link($courseurl,$cover,['class'=>'seavan-course-cover','aria-label'=>'مشاهده '.strip_tags($name),'tabindex'=>'-1']);
+        echo html_writer::start_div('sa-course-body');
+        echo html_writer::tag('span',$catname,['class'=>'sa-category-label']);
+        echo html_writer::tag('h3',html_writer::link($courseurl,$name));
+
         $mediahistory = [];
         $media = function_exists('local_seavanmedia_is_course') && local_seavanmedia_is_course($item);
         $mediaaccess = $media && (is_enrolled($ctx,null,'',true) || has_capability('moodle/course:update',$ctx));
@@ -235,28 +258,32 @@ if ($view === 'manage') {
             $mediafiles = array_filter(local_seavanmedia_course_files($item),fn($f)=>in_array($f['kind'],['video','audio'],true));
             $mediahistory = local_seavanmedia_progress($item->id);
             $seconds=0;foreach($mediafiles as $mf){$seconds+=(float)(sam_metadata($item->id,$mf['key'])['duration']??0);}
-            if($seconds>0){echo html_writer::tag('span',$digits(round($seconds/3600,1)).' ساعت شناسایی‌شده',['class'=>'seavan-course-label']);}
+
             $completed = count(array_filter($mediafiles,fn($f)=>($mediahistory[$f['key']]->percent ?? 0)>=95));
             $progress = count($mediafiles) ? 100*$completed/count($mediafiles) : null;
-            echo html_writer::tag('span',$digits(count($mediafiles)).' جلسه · '.$digits($completed).' دیده‌شده',['class'=>'seavan-course-label']);
+            echo html_writer::tag('span',$digits(count($mediafiles)).' جلسه'.($seconds>0?' · '.$digits(round($seconds/3600,1)).' ساعت':''),['class'=>'seavan-course-label']);
         }
         if ($progress !== null) {
             $percent = max(0,min(100,(int)round($progress)));
-            echo html_writer::tag('span',$digits($percent).($mediaaccess?'٪ جلسات مشاهده‌شده':'٪ تکمیل فعالیت‌ها'),['class'=>'seavan-course-label']);
+            echo html_writer::tag('span',$digits($percent).'٪ '.($mediaaccess?'جلسات دیده‌شده':'فعالیت‌های تکمیل‌شده'),['class'=>'seavan-course-label']);
             echo html_writer::tag('progress',$percent.'%',['value'=>$percent,'max'=>100,'class'=>'seavan-progress','aria-label'=>'تکمیل فعالیت‌ها']);
         } else {
             if (!$mediaaccess) { echo html_writer::tag('span',isset($enrolled[$item->id])?'در دسترس':'اطلاعات و عضویت',['class'=>'seavan-course-label']); }
         }
-        $label = $progress !== null && $progress >= 100 ? 'مرور آموزش' : ($mediaaccess && !empty($mediahistory) ? 'ادامه یادگیری' : (isset($enrolled[$item->id])?'ورود به آموزش':'مشاهده دوره'));
-        echo html_writer::link(new moodle_url('/course/view.php',['id'=>$item->id]),$label,['class'=>'btn btn-primary']);
+        $label = $progress !== null && $progress >= 100 ? 'مرور آموزش' : ($mediaaccess && !empty($mediahistory) ? 'ادامه یادگیری' : ($mediaaccess || isset($enrolled[$item->id])?'ورود به آموزش':'اطلاعات و عضویت'));
+        echo html_writer::link($courseurl,$label,['class'=>'btn btn-primary sa-course-open']);
+        echo html_writer::end_div();
         echo html_writer::end_div();
     }
     echo html_writer::end_div();
     if (!$count && !$sessionmatches) {
-        echo html_writer::div('نتیجه‌ای پیدا نشد. ' . html_writer::link($go('catalog'),'مشاهده کتابخانه'), 'seavan-empty');
+        $empty=$query!==''?'نتیجه‌ای پیدا نشد.':($view==='mine'?'هنوز دوره‌ای در یادگیری شما نیست.':'هنوز دوره‌ای به کتابخانه اضافه نشده است.');
+        $extra=$view==='mine'?html_writer::link($go('catalog'),'مشاهده آموزش‌ها'):($actions?html_writer::link(new moodle_url('/local/seavanmedia/sync.php'),'ورود دوره‌ها'):'');
+        echo html_writer::div(html_writer::tag('strong',$empty).html_writer::div($extra,'mt-2'), 'seavan-empty');
     } elseif ($view === 'home') {
         echo html_writer::div(html_writer::link($go($showcatalog?'catalog':'mine'),'مشاهده همه آموزش‌ها',['class'=>'btn btn-outline-primary']),'mt-3');
     }
+    if($matched>24){echo $OUTPUT->paging_bar($matched,(int)($offset/24),24,new moodle_url($url,['q'=>$query,'category'=>$categoryid,'favorites'=>$favonly]));}
     if ($sessionmatches) {
         echo html_writer::tag('h2','جلسات و فایل‌های پیدا شده',['class'=>'seavan-section']);
         echo html_writer::start_div('sa-session-results');

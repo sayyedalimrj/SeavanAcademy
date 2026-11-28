@@ -18,6 +18,7 @@ const config={...original.dataset};
 let started=false;
 function bindPlayback(v,player){
 if(started)return;started=true;
+const quality=document.getElementById('sam-quality');quality?.addEventListener('change',()=>{const u=new URL(location.href);u.searchParams.set('quality',quality.value);u.searchParams.set('at',String(Number.isFinite(v.currentTime)?v.currentTime:0));flush();location.assign(u.href);});
 const note=document.getElementById('sam-note-position');
 note?.form?.addEventListener('submit',()=>{note.value=Number.isFinite(v.currentTime)?v.currentTime:0;});
 let saving=false,last=0,dirty=false,pending=false,timer=null;
@@ -103,6 +104,21 @@ window.require(['media_videojs/video-lazy'],async function(module){
    const media=player.el().querySelector('video,audio')||original;
    bindPlayback(media,player);
    player.el().dataset.seavanEngine='videojs';
+   const bar=player.el().querySelector('.vjs-progress-holder');
+   if(bar&&config.previewUrl&&Number(config.previewStep)>0&&Number(config.previewCount)>0){
+      const tip=document.createElement('div');tip.className='sam-timepreview';tip.hidden=true;
+      const img=document.createElement('img');img.alt='';tip.append(img);bar.append(tip);
+      let last=-1;
+      const move=e=>{
+        const r=bar.getBoundingClientRect();if(!r.width||!Number.isFinite(media.duration))return;
+        const ratio=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+        const n=Math.min(Number(config.previewCount)-1,Math.floor(ratio*media.duration/Number(config.previewStep)));
+        if(n!==last){const url=new URL(config.previewUrl,location.href);url.searchParams.set('frame',String(n));img.src=url;last=n;}
+        tip.style.left=(ratio*100)+'%';tip.hidden=false;
+      };
+      bar.addEventListener('pointermove',move);bar.addEventListener('pointerdown',move);
+      ['pointerleave','pointerup','pointercancel'].forEach(ev=>bar.addEventListener(ev,()=>tip.hidden=true));
+   }
   });
  }catch(e){
   // If initialization has already moved the media, a reload with the native player is offered.

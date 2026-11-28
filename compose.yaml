@@ -6,11 +6,20 @@ x-app: &app
     SITE_URL: ${SITE_URL:?Run START.cmd first}
     DB_PASSWORD: ${DB_PASSWORD:?Run START.cmd first}
     SSL_PROXY: ${SSL_PROXY:-0}
+    SEAVAN_PROTECTED_MEDIA: ${SEAVAN_PROTECTED_MEDIA:-1}
   volumes:
     - moodledata:/var/moodledata
     - type: bind
       source: ${COURSES_DIR:-./courses}
       target: /srv/seavan-courses
+      read_only: true
+    - type: bind
+      source: ${COURSES_DIR2:-./courses2}
+      target: /srv/seavan-courses2
+      read_only: true
+    - type: bind
+      source: ${COURSES_DIR3:-./courses3}
+      target: /srv/seavan-courses3
       read_only: true
 services:
   db:
@@ -36,6 +45,8 @@ services:
       SSL_PROXY: ${SSL_PROXY:-0}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Run START.cmd first}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?Run START.cmd first}
+      SEAVAN_BOOTSTRAP_LOCAL: ${SEAVAN_BOOTSTRAP_LOCAL:-0}
+      SEAVAN_BIND_IP: ${BIND_IP:-127.0.0.1}
     entrypoint: ["/usr/local/bin/seavan-init"]
     depends_on:
       db:
@@ -58,14 +69,18 @@ services:
         condition: service_completed_successfully
   processor:
     <<: *app
+    cpus: 1.5
+    mem_limit: 2g
     restart: unless-stopped
     user: www-data
-    entrypoint: ["/bin/sh","-c","while true; do php /var/www/html/local/seavanmedia/cli/media.php --action=convertqueue; sleep 30; done"]
+    entrypoint: ["/bin/sh","-c","while true; do php /var/www/html/local/seavanmedia/cli/media.php --action=convertqueue; php /var/www/html/local/seavanmedia/cli/media.php --action=qualityqueue; php /var/www/html/local/seavanmedia/cli/media.php --action=previewqueue; php /var/www/html/local/seavanmedia/cli/media.php --action=hashqueue; sleep 30; done"]
     depends_on:
       init:
         condition: service_completed_successfully
   whisper:
     <<: *app
+    cpus: 2.0
+    mem_limit: 3g
     image: seavan-academy-whisper:4.5.16
     build:
       context: .

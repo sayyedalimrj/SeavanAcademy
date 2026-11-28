@@ -64,24 +64,26 @@ function sam_prepare(int $limit=12): int {
     }
     return $count;
 }
-function sam_convert(int $id,array $f): void {
+function sam_convert(int $id,array $f,int $height=0): void {
     $dir=sam_asset_dir($id,$f['key']);
     $meta=sam_metadata($id,$f['key'])?:sam_probe($id,$f);
     if(empty($meta['video'])){throw new RuntimeException('No video stream');}
     if(disk_free_space($dir)<max(1073741824,$f['size']*2)){throw new RuntimeException('Not enough free storage');}
-    $tmp=$dir.'/converted.tmp.mp4';
+    $dest=$height===480?'480.mp4':'converted.mp4';
+    $tmp=$dir.'/'.$dest.'.tmp.mp4';
+    $scale=$height===480?"scale=-2:trunc(min(480\\,ih)/2)*2":"scale=trunc(iw/2)*2:trunc(ih/2)*2";
     try {
-        [$rc]=sam_process(['/usr/bin/ffmpeg','-nostdin','-v','error','-i',$f['path'],'-map','0:v:0','-map','0:a:0?','-vf','scale=trunc(iw/2)*2:trunc(ih/2)*2','-c:v','libx264','-threads','2','-preset','veryfast','-crf','23','-pix_fmt','yuv420p','-c:a','aac','-movflags','+faststart','-y',$tmp],7200);
+        [$rc]=sam_process(['/usr/bin/ffmpeg','-nostdin','-v','error','-i',$f['path'],'-map','0:v:0','-map','0:a:0?','-vf',$scale,'-c:v','libx264','-threads','2','-preset','veryfast','-crf','23','-pix_fmt','yuv420p','-c:a','aac','-movflags','+faststart','-y',$tmp],7200);
         if($rc!==0||!is_file($tmp)||filesize($tmp)===0){throw new RuntimeException('FFmpeg conversion failed');}
-        rename($tmp,$dir.'/converted.mp4');
+        rename($tmp,$dir.'/'.$dest);
     }finally{@unlink($tmp);}
 }
 
 function sam_queue(int $id,array $f,string $action): void {
-    if(!in_array($action,['convert','transcribe'],true)){throw new coding_exception('Invalid job');}
+    if(!in_array($action,['convert','transcribe','hash','quality','preview'],true)){throw new coding_exception('Invalid job');}
     $dir=sam_asset_dir($id,$f['key']);
     if(!is_dir($dir)&&!mkdir($dir,0770,true)&&!is_dir($dir)){throw new RuntimeException('Cannot make job directory');}
-    sam_write_json($dir.'/'.$action.'.job.json',['id'=>$id,'key'=>$f['key'],'queued'=>time()]);
+    sam_write_json($dir.'/'.$action.'.job.json',['id'=>$id,'key'=>$f['key'],'fingerprint'=>$f['fingerprint']??$f['key'],'queued'=>time()]);
 }
 function sam_queue_run(string $action): void {
     global $CFG;
@@ -93,8 +95,16 @@ function sam_queue_run(string $action): void {
             if(!is_array($j)){continue;}
             try{
                 $c=get_course((int)$j['id']);$f=local_seavanmedia_get_file($c,$j['key']);
+                if(isset($j['fingerprint'])&&$j['fingerprint']!==($f['fingerprint']??$f['key'])){throw new RuntimeException('Source changed after job was queued');}
                 if(sam_asset_dir($c->id,$f['key']).'/'.$action.'.job.json'!==$p){throw new RuntimeException('Invalid job path');}
                 if($action==='convert'){sam_convert($c->id,$f);}
+                elseif($action==='quality'){sam_convert($c->id,$f,480);}
+                elseif($action==='hash'){
+                    $hash=hash_file('sha256',$f['path']);
+                    if(!$hash){throw new RuntimeException('Hash failed');}
+                    sam_write_json(dirname($p).'/sha256.json',['hash'=>$hash,'size'=>$f['size'],'fingerprint'=>$f['fingerprint']??$f['key']]);
+                }
+                elseif($action==='preview'){sam_previews($c->id,$f);}
                 else {
                     [$rc]=sam_process(['/opt/seavan-whisper/bin/python','/opt/seavan-tools/transcribe.py',$f['path'],dirname($p).'/transcript.json'],14400);
                     if($rc!==0){throw new RuntimeException('Transcription failed');}
@@ -112,4 +122,20 @@ function sam_transcript(int $id,string $key): array {
     $p=sam_asset_dir($id,$key).'/transcript.json';
     if(!is_readable($p)||filesize($p)>16*1024*1024){return [];}
     return json_decode(file_get_contents($p),true)?:[];
+}
+
+function sam_previews(int $id,array $f): void {
+    $dir=sam_asset_dir($id,$f['key']);
+    $meta=sam_metadata($id,$f['key'])?:sam_probe($id,$f);
+    if(empty($meta['video'])||empty($meta['duration'])){throw new RuntimeException('No video duration');}
+    $step=max(1,ceil($meta['duration']/24));
+    $count=0;
+    for($t=0;$t<$meta['duration']&&$count<24;$t+=$step){
+        $tmp=$dir.'/preview.tmp.jpg';
+        [$rc]=sam_process(['/usr/bin/ffmpeg','-nostdin','-v','error','-ss',(string)$t,'-i',$f['path'],'-frames:v','1','-vf','scale=200:-2','-y',$tmp],20);
+        if($rc!==0||!is_file($tmp)){@unlink($tmp);break;}
+        rename($tmp,$dir.'/preview-'.$count.'.jpg');$count++;
+    }
+    if(!$count){throw new RuntimeException('Preview generation failed');}
+    sam_write_json($dir.'/previews.json',['step'=>$step,'count'=>$count]);
 }

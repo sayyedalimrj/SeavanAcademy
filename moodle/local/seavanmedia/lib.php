@@ -4,6 +4,26 @@ defined('MOODLE_INTERNAL') || die();
 function local_seavanmedia_root(): string {
     return '/srv/seavan-courses';
 }
+function sam_roots(): array {
+    global $CFG;
+    $roots=['main'=>local_seavanmedia_root(),'disk2'=>'/srv/seavan-courses2','disk3'=>'/srv/seavan-courses3','uploads'=>$CFG->dataroot.'/seavan-uploads'];
+    return $roots;
+}
+function sam_root_for(string $folder): ?string {
+    foreach(sam_roots() as $root){
+        $real=realpath($root);
+        if($real&&str_starts_with($folder,$real.'/')){return $real;}
+    }
+    return null;
+}
+function sam_download_allowed(int $id): bool {
+    global $CFG;
+    if (!empty($CFG->seavanprotectedmedia)) {
+        return false;
+    }
+    return get_config('local_seavanmedia','nodownload_'.$id)!=='1' ||
+        has_capability('moodle/course:update',context_course::instance($id));
+}
 function local_seavanmedia_idnumber(string $name): string {
     return 'seavanmedia:' . hash('sha256',$name);
 }
@@ -12,25 +32,30 @@ function local_seavanmedia_is_course($course): bool {
 }
 // Only an explicit marker makes a folder a collection instead of a course.
 function local_seavanmedia_folders(): array {
-    $root = realpath(local_seavanmedia_root());
-    if (!$root || !is_dir($root) || !is_readable($root)) { return []; }
-    $out = [];
-    $walk = function(string $dir, string $prefix = '', int $depth = 0) use (&$walk, &$out, $root) {
-        if ($depth > 12) { return; }
-        foreach (new DirectoryIterator($dir) as $entry) {
-            if ($entry->isDot() || $entry->isLink() || !$entry->isDir() || str_starts_with($entry->getFilename(),'.')) { continue; }
-            $path = $entry->getRealPath();
-            if (!$path || !str_starts_with($path,$root.'/') || !is_readable($path)) { continue; }
-            $rel = $prefix.$entry->getFilename();
-            if (is_file($path.'/.seavan-ignore')) { continue; }
-            if (is_file($path.'/.seavan-category') && !is_link($path.'/.seavan-category')) {
-                $walk($path,$rel.'/', $depth+1);
-            } else {
-                $out[local_seavanmedia_idnumber($rel)] = $path;
+    $out=[];$conflicts=[];
+    foreach(sam_roots() as $label=>$rootpath){
+        $root=realpath($rootpath);
+        if(!$root||!is_dir($root)||!is_readable($root)){continue;}
+        $walk=function(string $dir,string $prefix='',int $depth=0)use(&$walk,&$out,&$conflicts,$root,$label){
+            if($depth>12){return;}
+            foreach(new DirectoryIterator($dir) as $entry){
+                if($entry->isDot()||$entry->isLink()||!$entry->isDir()||str_starts_with($entry->getFilename(),'.')){continue;}
+                $path=$entry->getRealPath();
+                if(!$path||!str_starts_with($path,$root.'/')||!is_readable($path)||is_file($path.'/.seavan-ignore')){continue;}
+                $rel=$prefix.$entry->getFilename();
+                if(is_file($path.'/.seavan-category')&&!is_link($path.'/.seavan-category')){$walk($path,$rel.'/', $depth+1);continue;}
+                $identity=local_seavanmedia_idnumber(($label==='main'?'':$label.'/').$rel);
+                $marker=$path.'/.seavan-id';
+                if(is_file($marker)&&!is_link($marker)&&filesize($marker)<200){
+                    $value=trim(file_get_contents($marker));
+                    if(preg_match('/^seavanmedia:[a-f0-9]{64}$/D',$value)){$identity=$value;}
+                }
+                if(isset($out[$identity])||isset($conflicts[$identity])){unset($out[$identity]);$conflicts[$identity]=true;continue;}
+                $out[$identity]=$path;
             }
-        }
-    };
-    $walk($root);
+        };
+        $walk($root);
+    }
     return $out;
 }
 function local_seavanmedia_normalize(string $name): string {
@@ -41,6 +66,9 @@ function local_seavanmedia_scan(string $folder): array {
     $out = [];
     $base = realpath($folder);
     if (!$base || !is_dir($base)) { return []; }
+    $aliases=[];$manifest=$base.'/.seavan-aliases.json';
+    if(is_file($manifest)&&!is_link($manifest)&&filesize($manifest)<1048576){$aliases=json_decode(file_get_contents($manifest),true)?:[];}
+    $conflicts=[];
     $exts = ['mp4'=>'video/mp4','webm'=>'video/webm','m4v'=>'video/mp4','ogv'=>'video/ogg','mov'=>'video/quicktime',
         'mkv'=>'video/x-matroska','pdf'=>'application/pdf','mp3'=>'audio/mpeg','m4a'=>'audio/mp4',
         'zip'=>'application/zip','7z'=>'application/octet-stream','rar'=>'application/octet-stream','xlsx'=>'application/octet-stream','xls'=>'application/octet-stream','docx'=>'application/octet-stream','doc'=>'application/octet-stream','pptx'=>'application/octet-stream','ppt'=>'application/octet-stream','txt'=>'text/plain','csv'=>'text/csv','dwg'=>'application/octet-stream','dxf'=>'application/octet-stream','rvt'=>'application/octet-stream','ifc'=>'application/octet-stream','jpg'=>'image/jpeg','jpeg'=>'image/jpeg','png'=>'image/png','gif'=>'image/gif','wav'=>'audio/wav','ogg'=>'audio/ogg','flac'=>'audio/flac','avi'=>'application/octet-stream','wmv'=>'application/octet-stream','srt'=>'text/plain','vtt'=>'text/vtt'];
@@ -55,11 +83,14 @@ function local_seavanmedia_scan(string $folder): array {
         $path = $file->getRealPath();
         if (!$path || !str_starts_with($path,$base.'/')) { continue; }
         $rel = substr($path,strlen($base)+1);
-        $key = hash('sha256',$rel."\0".$file->getSize()."\0".$file->getMTime());
+        $fingerprint = hash('sha256',$rel."\0".$file->getSize()."\0".$file->getMTime());
+        $alias=$aliases[$rel]??'';
+        $key=is_string($alias)&&preg_match('/^[a-f0-9]{64}$/D',$alias)?$alias:$fingerprint;
+        if(isset($out[$key])||isset($conflicts[$key])){unset($out[$key]);$conflicts[$key]=true;continue;}
         $group = dirname($rel) === '.' ? 'جلسات دوره' : dirname($rel);
         $title = pathinfo($file->getFilename(),PATHINFO_FILENAME);
         $kind = in_array($ext,['mp4','webm','m4v','ogv','mov','mkv','avi','wmv'],true) ? 'video' : ($ext === 'pdf' ? 'pdf' : (in_array($ext,['mp3','m4a','wav','ogg','flac'],true) ? 'audio' : 'download'));
-        $out[$key] = ['key'=>$key,'path'=>$path,'name'=>$file->getFilename(),'group'=>$group,'title'=>$title,
+        $out[$key] = ['key'=>$key,'fingerprint'=>$fingerprint,'path'=>$path,'name'=>$file->getFilename(),'group'=>$group,'title'=>$title,
             'mime'=>$exts[$ext],'kind'=>$kind,'size'=>$file->getSize(),'rel'=>$rel];
     }
     // Numeric prefixes define the chapter order; PDF-only groups follow video groups.
@@ -98,23 +129,28 @@ function local_seavanmedia_require_course(int $id) {
 function local_seavanmedia_get_file($course,string $key): array {
     $files = local_seavanmedia_course_files($course);
     if (!isset($files[$key])) { throw new moodle_exception('mediaunavailable','local_seavanmedia'); }
-    $file = $files[$key];
-    // Cached inventory is not authorization. Recheck the actual path and fingerprint.
-    clearstatcache(true,$file['path']);
-    $root = realpath(local_seavanmedia_root());
     $folder = local_seavanmedia_folders()[$course->idnumber] ?? '';
+    return sam_validate_media_file($files[$key], $folder, $key);
+}
+
+/** Revalidate a known inventory entry immediately before serving its contents. */
+function sam_validate_media_file(array $file, string $folder, string $key): array {
+    // Cached inventory is not authorization. Recheck the actual path and fingerprint.
+    clearstatcache(true, $file['path']);
+    $root = sam_root_for($folder);
     $path = realpath($file['path']);
     if (!$root || !$folder || !$path || !str_starts_with($folder,$root.'/') ||
         !str_starts_with($path,$folder.'/') || $path !== $file['path'] ||
         !is_file($path) || !is_readable($path) || is_link($file['path']) ||
-        hash('sha256',$file['rel']."\0".filesize($path)."\0".filemtime($path)) !== $key) {
+        hash('sha256',$file['rel']."\0".filesize($path)."\0".filemtime($path)) !== ($file['fingerprint']??$key)) {
         throw new moodle_exception('mediaunavailable','local_seavanmedia');
     }
     return $file;
 }
 function local_seavanmedia_category_for_folder($basecat, string $folder) {
     global $DB;
-    $root = realpath(local_seavanmedia_root());
+    $root = sam_root_for($folder);
+    if(!$root){return $basecat;}
     $rel = substr($folder,strlen($root)+1);
     $parts = explode('/',$rel);
     array_pop($parts);
@@ -130,6 +166,21 @@ function local_seavanmedia_category_for_folder($basecat, string $folder) {
         $parent = $cat;
     }
     return $parent;
+}
+function sam_record_revision(int $id,array $files): void {
+    global $CFG;
+    require_once(__DIR__.'/assets.php');
+    $dir=$CFG->dataroot.'/seavan-revisions/'.$id;
+    if(!is_dir($dir)&&!mkdir($dir,0770,true)&&!is_dir($dir)){return;}
+    $manifest=[];
+    foreach($files as $f){$manifest[$f['key']]=['path'=>$f['rel'],'size'=>$f['size'],'fingerprint'=>$f['fingerprint']??$f['key']];}
+    ksort($manifest);
+    $hash=hash('sha256',json_encode($manifest,JSON_INVALID_UTF8_SUBSTITUTE));
+    $last=is_readable($dir.'/latest.json')?json_decode(file_get_contents($dir.'/latest.json'),true):[];
+    if(($last['hash']??'')===$hash){return;}
+    $record=['time'=>time(),'hash'=>$hash,'files'=>$manifest];
+    sam_write_json($dir.'/'.time().'-'.substr($hash,0,12).'.json',$record);
+    sam_write_json($dir.'/latest.json',$record);
 }
 function local_seavanmedia_sync(): array {
     global $CFG,$DB;
@@ -181,10 +232,12 @@ function local_seavanmedia_sync(): array {
                 $module = $DB->get_record('modules',['name'=>'url'],'*',MUST_EXIST);
                 if (!$DB->record_exists('course_modules',['course'=>$course->id,'idnumber'=>'seavanmedia-player'])) {
                     add_moduleinfo((object)['modulename'=>'url','module'=>$module->id,'section'=>0,'visible'=>1,
-                        'name'=>'مشاهده جلسات و دانلود فایل‌ها','cmidnumber'=>'seavanmedia-player','intro'=>'','introformat'=>FORMAT_HTML,
+                        'name'=>'مشاهده جلسات','cmidnumber'=>'seavanmedia-player','intro'=>'','introformat'=>FORMAT_HTML,
                         'externalurl'=>(new moodle_url('/local/seavanmedia/view.php',['id'=>$course->id]))->out(false),
                         'display'=>RESOURCELIB_DISPLAY_OPEN,'groupmode'=>0,'completion'=>0],$course);
                 }
+                sam_record_revision($course->id,$files);
+                if($created){set_config('lastnewcourse',time(),'local_seavanmedia');}
                 $result[] = ($created?'ایجاد: ':'به‌روز: ').$course->fullname.' — '.count($files).' فایل';
             } catch (\Throwable $e) {
                 $result[] = 'خطا در '.basename($folder).': '.$e->getMessage();
@@ -198,6 +251,39 @@ function local_seavanmedia_url(int $courseid,string $file='',bool $download=fals
     if ($download) { $params['download']=1; }
     return new moodle_url('/local/seavanmedia/file.php',$params);
 }
+function sam_playback_url(moodle_url $url, int $courseid, string $file, string $variant): moodle_url {
+    global $CFG, $SESSION;
+    if (empty($CFG->seavanprotectedmedia)) {
+        return $url;
+    }
+    $SESSION->seavanplaybacksecret ??= bin2hex(random_bytes(32));
+    $expires = time() + 8 * HOURSECS;
+    $ticket = hash_hmac('sha256', "$courseid:$file:$variant:$expires", $SESSION->seavanplaybacksecret);
+    return new moodle_url($url, ['until' => $expires, 'ticket' => $ticket]);
+}
+
+/** Serve a session-bound playback request with native Moodle byte ranges. */
+function sam_send_protected_media(int $courseid, string $file, string $variant, string $path, string $mime): void {
+    global $SESSION;
+    $expires = optional_param('until', 0, PARAM_INT);
+    $ticket = optional_param('ticket', '', PARAM_ALPHANUM);
+    $dest = $_SERVER['HTTP_SEC_FETCH_DEST'] ?? '';
+    $site = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? '';
+    if (empty($SESSION->seavanplaybacksecret) || $expires <= time() ||
+            !in_array($dest, ['', 'audio', 'video'], true) || !in_array($site, ['', 'same-origin'], true) ||
+            !hash_equals(hash_hmac('sha256', "$courseid:$file:$variant:$expires", $SESSION->seavanplaybacksecret), $ticket)) {
+        send_file_not_found();
+    }
+    \core\session\manager::write_close();
+    header('Content-Disposition: inline');
+    header('Cache-Control: private, no-store');
+    header('Referrer-Policy: no-referrer');
+    header('Cross-Origin-Resource-Policy: same-origin');
+    header('X-Content-Type-Options: nosniff');
+    readfile_accel($path, $mime, true);
+    exit;
+}
+
 function local_seavanmedia_progress(int $courseid): array {
     global $DB,$USER;
     $rows=$DB->get_records('local_seavanmedia_progress',['courseid'=>$courseid,'userid'=>$USER->id],'timemodified DESC');

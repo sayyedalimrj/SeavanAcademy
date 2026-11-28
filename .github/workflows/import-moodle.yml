@@ -1,6 +1,8 @@
 name: Import Moodle and smoke test
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
   push:
     paths:
       - '.github/workflows/import-moodle.yml'
@@ -10,22 +12,24 @@ on:
       - 'moodle/course/view.php'
       - 'moodle/local/seavan/**'
       - 'moodle/local/seavanmedia/**'
-      - 'tests/media-smoke.py'
-      - 'tests/player-browser.py'
+      - 'tests/**'
+      - '.devcontainer/**'
       - 'docker/**'
-      - 'manage.ps1'
+      - '*.ps1'
+      - 'compose*.yaml'
+      - 'docs/**'
       - '*.cmd'
       - 'docker/**'
       - 'Dockerfile'
       - 'compose.yaml'
 permissions:
-  contents: write
+  contents: read
 concurrency:
-  group: moodle-import
+  group: moodle-import-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   import:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -35,24 +39,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f moodle/version.php ]; then
-            curl --fail --location --retry 3 https://download.moodle.org/download.php/direct/stable405/moodle-4.5.16.tgz -o /tmp/moodle.tgz
-            echo '44b77196f6a7a73ad15a329d5669a7fbd9624b6b58b132e4e69ffebc7dcc2031  /tmp/moodle.tgz' | sha256sum -c -
-            mkdir -p moodle
-            tar -xzf /tmp/moodle.tgz --strip-components=1 -C moodle
-            test -f moodle/version.php
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add -f moodle/
-            git commit -m 'Vendor official Moodle 4.5.16 source (GPL)'
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
+          test -f moodle/version.php
+      - name: Parse PowerShell operations
+        shell: pwsh
+        run: |
+          Get-ChildItem -File *.ps1 | ForEach-Object {
+            $errorsFound = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errorsFound)
+            if ($errorsFound) { throw ($errorsFound | Out-String) }
+          }
       - name: Build and initialize test site
+        id: site_ready
         shell: bash
         run: |
           set -euo pipefail
-          printf 'BIND_IP=127.0.0.1\nSITE_URL=http://127.0.0.1:8080\nADMIN_EMAIL=admin@example.invalid\nADMIN_PASSWORD=Aa1!%s\nDB_PASSWORD=%s\nDB_ROOT_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
+          pwsh -NoProfile -File ./start.ps1 -NonInteractive -PrepareOnly
+          grep -qx 'SEAVAN_PROTECTED_MEDIA=1' .env
+          sed -i 's/^SEAVAN_PROTECTED_MEDIA=1$/SEAVAN_PROTECTED_MEDIA=0/' .env
           mkdir -p "courses/CI Media Course/Chapter 1"
           if ! command -v ffmpeg >/dev/null; then sudo apt-get update && sudo apt-get install -y ffmpeg; fi
           ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=navy:s=320x180:r=5 -t 20 -c:v libx264 -pix_fmt yuv420p -movflags +faststart "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
@@ -65,7 +68,8 @@ jobs:
           printf 'WEBVTT\n\n00:00:00.000 --> 00:00:05.000\nSample subtitle\n' > "courses/CI Media Course/Chapter 1/02 - Browser.en.vtt"
           find courses -type f -exec touch -d '5 minutes ago' {} +
           touch -d '5 minutes ago' "courses/CI Media Course/Chapter 1/01 - Sample.mp4"
-          docker compose up -d --build
+          pwsh -NoProfile -File ./start.ps1 -NonInteractive -NoBrowser
+          python3 tests/windows-first-login.py
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8080/login/index.php -o /tmp/login.html; then
               grep -Eq 'lang="fa(-[A-Za-z]+)?"' /tmp/login.html
@@ -93,17 +97,19 @@ jobs:
           assert token, 'No login token in Moodle'
           body = urllib.parse.urlencode({'username':'admin','password':env['ADMIN_PASSWORD'],'logintoken':html.unescape(token.group(1))}).encode()
           opener.open(base + '/login/index.php', body, timeout=90).read()
-          for view, expected in [('/my/index.php','seavan-hero'),('/my/courses.php','seavan-grid'),('/course/index.php','seavan-grid'),('/local/seavan/index.php?view=manage','seavan-actions')]:
+          for view, expected in [('/my/index.php','sa-welcome'),('/my/courses.php','seavan-grid'),('/course/index.php','seavan-grid'),('/local/seavan/index.php?view=manage','seavan-actions')]:
               page = get(view)
               assert expected in page, 'Academy route failed: ' + view
               assert page.count('class="sa-main-nav"') == 1, 'Academy must have exactly one primary menu'
               assert 'class="seavan-nav"' not in page, 'Duplicate menu rendered'
               assert 'drawer-toggles' not in page, 'Unwanted drawer controls rendered'
+              menu = re.search(r'<nav class="sa-main-nav".*?</nav>', page, re.S)
+              assert menu and menu[0].count('<a ') == 3, 'Expected only two learning destinations and management'
               assert 'seavan-login-story' not in page, 'Login failed'
           print('Authenticated Academy routes passed.')
           PY
           docker compose exec -T web sh -c 'find /var/www/html/local/seavanmedia -name "*.php" -print0 | xargs -0 -n1 php -l'
-          node --check moodle/local/seavanmedia/player.js
+          node --check moodle/local/seavanmedia/amd/build/player.min.js
           docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
           docker compose exec -T -u www-data web php /var/www/html/admin/cli/scheduled_task.php --execute='\local_seavanmedia\task\discover'
           docker compose exec -T -u www-data web php /var/www/html/local/seavanmedia/cli/media.php --action=probe --limit=20
@@ -114,7 +120,66 @@ jobs:
           python3 -m venv /tmp/seavan-browser
           /tmp/seavan-browser/bin/pip install playwright==1.51.0
           /tmp/seavan-browser/bin/python -m playwright install --with-deps chromium
+          docker compose exec -T -u www-data web php /var/www/html/admin/cli/cfg.php --name=loginpasswordtoggle --set=1
           /tmp/seavan-browser/bin/python tests/player-browser.py
+      - name: Save UI screenshots for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-ui-screenshots
+          path: ui-screenshots/
+          if-no-files-found: ignore
+      - name: Test learner access and concurrent media requests
+        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
+        run: |
+          if ! docker compose exec -T -u www-data web php < tests/security-fixture.php > /tmp/security-fixture.json; then
+            cat /tmp/security-fixture.json >&2
+            exit 1
+          fi
+          python3 tests/security-load.py /tmp/security-fixture.json
+          python3 tests/download-smoke.py /tmp/security-fixture.json
+      - name: Test packaged protected playback, quizzes and viewing report
+        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          sed -i 's/^SEAVAN_PROTECTED_MEDIA=0$/SEAVAN_PROTECTED_MEDIA=1/' .env
+          docker compose up -d --no-build --no-deps --force-recreate web
+          curl --retry 10 --retry-all-errors --retry-delay 1 --max-time 5 -fsS http://127.0.0.1:8080/login/index.php -o /tmp/protected-login.html
+          /tmp/seavan-browser/bin/python tests/protected-playback.py /tmp/security-fixture.json
+      - name: Restore a real backup in the test stack
+        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File ./manage.ps1 -Action backup
+          backup="$(find backups -mindepth 1 -maxdepth 1 -type d -name 'snapshot-*' -print -quit)"
+          test -n "$backup"
+          docker compose exec -T -u www-data web php /var/www/html/admin/cli/cfg.php --name=seavan_ci_restore --set=changed
+          printf 'RESTORE\n' | pwsh -NoProfile -File ./manage.ps1 -Action restore -Snapshot "$backup"
+          curl --retry 5 --retry-connrefused -fsS http://127.0.0.1:8080/login/index.php -o /tmp/restored-login.html
+          grep -q 'seavan-login-story' /tmp/restored-login.html
+          if docker compose exec -T -u www-data web php /var/www/html/admin/cli/cfg.php --name=seavan_ci_restore; then
+            echo 'The post-backup setting survived restore'
+            exit 1
+          fi
+      - name: Test secure HTTPS proxy-mode login
+        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          bash -n .devcontainer/recover-preview.sh .devcontainer/update-preview.sh
+          sed -i 's|^SITE_URL=.*|SITE_URL=https://academy.preview.test|' .env
+          printf '\nSSL_PROXY=1\n' >> .env
+          docker compose up -d --no-build --no-deps --force-recreate web
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/login/index.php -o /tmp/proxy-login.html; then break; fi
+            sleep 2
+          done
+          old_password="$(grep '^ADMIN_PASSWORD=' .env | cut -d= -f2-)"
+          SEAVAN_TEST_PASSWORD="$old_password" python3 tests/preview-login.py --origin https://academy.preview.test --port 8080
+          export SEAVAN_TEST_PASSWORD="Aa1!$(openssl rand -hex 24)"
+          docker compose exec -T -e SEAVAN_TEST_PASSWORD -u www-data web php < .devcontainer/reset-preview-admin.php
+          python3 tests/preview-login.py --origin https://academy.preview.test --port 8080
+          SEAVAN_TEST_PASSWORD="$old_password" python3 tests/preview-login.py --origin https://academy.preview.test --port 8080 --expect-denied
       - name: Clean test environment
         if: always()
         run: |
@@ -122,3 +187,26 @@ jobs:
           docker compose logs --tail=80 init web || true
           docker compose down -v || true
           rm -f .env
+
+  windows-config:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test the Windows installer preflight and private settings
+        shell: powershell
+        run: |
+          & ./start.ps1 -NonInteractive -PrepareOnly
+          if (!(Test-Path .env)) { throw 'Missing installer settings' }
+          $settings = Get-Content .env
+          if ($settings -notcontains 'SITE_URL=http://127.0.0.1:8080' -or $settings -notcontains 'SEAVAN_PROTECTED_MEDIA=1') {
+            throw 'The installer must default to local access and protected media'
+          }
+          $acl = Get-Acl .env
+          if (!$acl.AreAccessRulesProtected) { throw 'The settings file is inheriting access rules' }
+          $hash = (Get-FileHash .env).Hash
+          & ./start.ps1 -NonInteractive -PrepareOnly
+          if ((Get-FileHash .env).Hash -ne $hash) { throw 'The installer modified existing credentials' }
+          foreach ($directory in 'courses','courses2','courses3') {
+            if (!(Test-Path $directory -PathType Container)) { throw 'Missing archive directory' }
+          }

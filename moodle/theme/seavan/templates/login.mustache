@@ -15,8 +15,8 @@
                         <section class="seavan-login-story" aria-label="آکادمی سیوان">
                             <div class="seavan-login-logo"><img src="{{{ config.wwwroot }}}/theme/seavan/pix/company-logo.svg" alt="شرکت سیوان تدبیر تجارت"></div>
                             <div class="seavan-login-kicker" lang="en" dir="ltr">SEAVAN ACADEMY</div>
-                            <h2>آکادمی سیوان</h2>
-                            <p>کتابخانه آموزش‌های داخلی شرکت سیوان</p>
+                            <h1>آکادمی سیوان</h1>
+                            <p>آموزش‌های داخلی شرکت، در یک فضای ساده و در دسترس.</p>
                         </section>
                         <div class="login-container">{{{ output.main_content }}}</div>
                     </div>
@@ -29,6 +29,33 @@
 </body>
 </html>
 {{#js}}
+{{#passwordtoggle}}
+const passwordField = document.querySelector('#login #password');
+if (passwordField) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'sa-login-password-toggle';
+    button.className = 'btn btn-outline-secondary mt-2{{#passwordtogglesmallscreensonly}} d-sm-none{{/passwordtogglesmallscreensonly}}';
+    button.textContent = 'نمایش رمز عبور';
+    button.setAttribute('aria-controls', passwordField.id);
+    button.setAttribute('aria-pressed', 'false');
+    button.addEventListener('click', () => {
+        const visible = passwordField.type === 'password';
+        passwordField.type = visible ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(visible));
+    });
+    passwordField.after(button);
+    {{#passwordtogglesmallscreensonly}}
+    const desktop = window.matchMedia('(min-width: 576px)');
+    desktop.addEventListener('change', event => {
+        if (event.matches) {
+            passwordField.type = 'password';
+            button.setAttribute('aria-pressed', 'false');
+        }
+    });
+    {{/passwordtogglesmallscreensonly}}
+}
+{{/passwordtoggle}}
 M.util.js_pending('theme_boost/loader');
 require(['theme_boost/loader'], function() { M.util.js_complete('theme_boost/loader'); });
 {{/js}}

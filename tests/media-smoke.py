@@ -25,7 +25,7 @@ catalog = read('/course/index.php')
 assert 'CI Media Course' in catalog, 'Folder import did not create course'
 assert 'Other Course' in catalog
 assert 'CI ignored' not in catalog
-assert catalog.count('CI Media Course') == 1
+assert len(re.findall(r'<h3>\s*<a\b[^>]*>CI Media Course</a>\s*</h3>', catalog)) == 1, 'Repeated sync duplicated a course card'
 links = re.findall(r'href="([^"]*/course/view\.php\?id=\d+[^"]*)"', catalog)
 viewurl = next((html.unescape(x) for x in links if '01 - Sample' in read(html.unescape(x))), None)
 assert viewurl, 'Sample course link not found'

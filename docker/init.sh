@@ -11,16 +11,26 @@ case "$state" in
     su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/upgrade.php --non-interactive'
     ;;
   empty)
+    if [ "${SEAVAN_BOOTSTRAP_LOCAL:-0}" = 1 ] && {
+      [ "${SITE_URL:-}" != 'http://127.0.0.1:8080' ] || [ "${SEAVAN_BIND_IP:-}" != 127.0.0.1 ] || [ "${SSL_PROXY:-0}" = 1 ];
+    }; then
+      echo 'First admin sign-in requires http://127.0.0.1:8080 and a local-only bind.' >&2
+      exit 1
+    fi
     su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/install_database.php --agree-license --lang=fa --fullname="آکادمی سیوان" --shortname="آکادمی سیوان" --adminuser=admin --adminpass="$ADMIN_PASSWORD" --adminemail="$ADMIN_EMAIL"'
     su -s /bin/sh www-data -c 'php /var/www/html/local/seavan/cli/setup_categories.php'
+    if [ "${SEAVAN_BOOTSTRAP_LOCAL:-0}" = 1 ]; then
+      su -s /bin/sh www-data -c 'php /var/www/html/local/seavan/cli/first_login.php --initialize'
+    fi
     ;;
   *) echo "Non-empty incomplete database; inspect before retrying." >&2; exit 1 ;;
 esac
+su -s /bin/sh www-data -c 'php /var/www/html/local/seavan/cli/first_login.php'
 
 # Apply the Academy theme and menu once; subsequent restarts preserve admin settings.
 if ! su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=local_seavan --name=brandconfigured --no-eol' >/dev/null 2>&1; then
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=theme --set=seavan'
-  su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=custommenuitems --set="آکادمی سیوان|$SITE_URL/local/seavan/index.php"'
+  su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --name=custommenuitems --set=""'
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/cfg.php --component=local_seavan --name=brandconfigured --set=1'
   su -s /bin/sh www-data -c 'php /var/www/html/admin/cli/purge_caches.php'
 fi

@@ -7,8 +7,12 @@ $course=local_seavanmedia_require_course($id);
 $file=local_seavanmedia_get_file($course,required_param('file',PARAM_ALPHANUM));
 $istrack=optional_param('track',0,PARAM_BOOL) && strtolower(pathinfo($file['name'],PATHINFO_EXTENSION))==='vtt';
 $download=optional_param('download',0,PARAM_BOOL) || ($file['kind']==='download' && !$istrack);
+if($download && !sam_download_allowed($id)){throw new moodle_exception('mediaunavailable','local_seavanmedia');}
 if($download && ($_SERVER['REQUEST_METHOD'] ?? '') === 'GET' && empty($_SERVER['HTTP_RANGE'])){
     \local_seavanmedia\event\media_accessed::create(['context'=>context_course::instance($id),'other'=>['filekey'=>$file['key'],'action'=>'download']])->trigger();
+}
+if (!empty($CFG->seavanprotectedmedia) && in_array($file['kind'], ['video', 'audio'], true)) {
+    sam_send_protected_media($id, $file['key'], 'original', $file['path'], $file['mime']);
 }
 // Release the Moodle session lock before streaming so progress requests can run in parallel.
 \core\session\manager::write_close();
