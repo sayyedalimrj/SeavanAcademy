@@ -61,9 +61,10 @@ jobs:
           New-Item -ItemType Directory $course, $other -Force | Out-Null
           ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=black:s=160x90:r=15 -t 12 -an -c:v libvpx -threads 1 -y "$course/02 - Browser.webm"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          Copy-Item -LiteralPath "$course/02 - Browser.webm" -Destination "$course/01 - Sample.webm"
+          ffmpeg -hide_banner -loglevel error -i "$course/02 - Browser.webm" -an -c:v libx264 -threads 1 -y "$course/01 - Sample.mp4"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Copy-Item -LiteralPath "$course/02 - Browser.webm" -Destination "$other/01 - Other.webm"
-          foreach ($file in Get-ChildItem courses -Recurse -File -Filter '*.webm') {
+          foreach ($file in Get-ChildItem courses -Recurse -File -Include '*.webm','*.mp4') {
               $file.LastWriteTimeUtc = [DateTime]::UtcNow.AddMinutes(-10)
           }
           & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File windows-native/academy.ps1 -Action Sync
