@@ -121,7 +121,7 @@ if ($view==='mine' && $query==='' && !$categoryid && !$favonly) {
     if (!empty($CFG->messaging) && has_capability('moodle/site:sendmessage', $context)) {
         echo $tile(new moodle_url('/message/index.php'), 'پیام‌ها', 'گفتگو و جست‌وجوی همکاران', 'i/sendmessage', true);
         $administrator = get_admin();
-        if ($administrator && $administrator->id != $USER->id && \core_messagepi::can_send_message($administrator->id, $USER->id)) {
+        if ($administrator && $administrator->id != $USER->id && \core_message\api::can_send_message($administrator->id, $USER->id)) {
             echo $tile(new moodle_url('/message/index.php', ['id' => $administrator->id]),
                 'پیام به مدیر', 'ارسال پیام در مودل', 'i/notifications', true);
         }
