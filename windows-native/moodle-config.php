@@ -19,7 +19,9 @@ $CFG->prefix = 'mdl_';
 $CFG->dboptions = ['dbpersist' => 0, 'dbport' => 9336, 'dbsocket' => '', 'dbcollation' => 'utf8mb4_unicode_ci'];
 $CFG->wwwroot = 'http://127.0.0.1:8080';
 $CFG->dataroot = str_replace(chr(92), '/', $statepath) . '/data';
-$CFG->seavanmediaroots = ['main' => str_replace(chr(92), '/', $settings['courseFolder'])];
+$coursefolder = $settings['courseFolder'] === 'courses' ? dirname(__DIR__) . '/courses' : $settings['courseFolder'];
+$CFG->seavanmediaroots = ['main' => str_replace(chr(92), '/', $coursefolder)];
+$CFG->seavanlightmedia = true;
 $CFG->admin = 'admin';
 $CFG->directorypermissions = 02770;
 $CFG->lang = 'fa';
@@ -41,5 +43,5 @@ $CFG->scheduled_tasks = [
     '\\local_seavanmedia\\task\\discover' => ['disabled' => 1],
     '\\local_seavanmedia\\task\\prepare' => ['disabled' => 1],
 ];
-unset($settings, $statepath);
+unset($settings, $statepath, $coursefolder);
 require_once(__DIR__ . '/../moodle/lib/setup.php');

@@ -1,6 +1,9 @@
 <?php
 require(__DIR__.'/../../config.php');require_once(__DIR__.'/lib.php');require_once(__DIR__.'/assets.php');
 require_login();require_capability('moodle/site:config',context_system::instance());
+if (!empty($CFG->seavanlightmedia) && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    throw new moodle_exception('invalidrequest');
+}
 if(($_SERVER['REQUEST_METHOD']??'')==='POST'){
     require_sesskey();$id=required_param('id',PARAM_INT);$course=get_course($id);
     $f=local_seavanmedia_get_file($course,required_param('file',PARAM_ALPHANUM));
@@ -14,6 +17,22 @@ $PAGE->set_pagelayout(($CFG->theme??'')==='seavan'?'seavanworkspace':'standard')
 echo $OUTPUT->header();
 echo html_writer::div(html_writer::link(new moodle_url('/local/seavan/index.php',['view'=>'manage']),'مدیریت ← بازگشت'),'sa-admin-back');echo html_writer::start_div('seavan-shell');
 echo html_writer::tag('h1','سلامت کتابخانه',['class'=>'seavan-section']);
+
+if (!empty($CFG->seavanlightmedia)) {
+    echo html_writer::tag('p','بررسی خودکار کدک و پردازش سنگین در نسخه سبک ویندوز غیرفعال است.');
+    $table = new html_table();
+    $table->head = ['دوره', 'تعداد فایل‌ها'];
+    foreach (local_seavanmedia_folders() as $number => $folder) {
+        $course = $DB->get_field('course', 'fullname', ['idnumber' => $number]);
+        if ($course !== false) {
+            $table->data[] = [s($course), count(local_seavanmedia_files($folder))];
+        }
+    }
+    echo $table->data ? html_writer::table($table) : html_writer::div('هنوز دوره‌ای شناسایی نشده است.', 'seavan-empty');
+    echo html_writer::end_div();
+    echo $OUTPUT->footer();
+    return;
+}
 
 $rows=[];$issues=[];$total=0;$pending=0;$media=[];
 foreach(local_seavanmedia_folders() as $number=>$folder){

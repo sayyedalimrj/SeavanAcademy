@@ -76,13 +76,19 @@ function Get-Runtimes {
         [void][IO.Directory]::CreateDirectory($stage)
         try {
             Write-Host "Preparing $name $($item.version)..."
-            if (!(Test-Path -LiteralPath $archive) -or (Get-FileHash -LiteralPath $archive).Hash -ne $item.sha256) {
-                Invoke-WebRequest -Uri $item.url -UseBasicParsing -OutFile $archive
+            $bundled = Join-Path $PSScriptRoot "offline/$name.zip"
+            if (Test-Path -LiteralPath $bundled -PathType Leaf) {
+                $inputArchive = $bundled
+            } else {
+                $inputArchive = $archive
+                if (!(Test-Path -LiteralPath $archive) -or (Get-FileHash -LiteralPath $archive).Hash -ne $item.sha256) {
+                    Invoke-WebRequest -Uri $item.url -UseBasicParsing -OutFile $archive
+                }
             }
-            if ((Get-FileHash -LiteralPath $archive).Hash -ne $item.sha256) {
+            if ((Get-FileHash -LiteralPath $inputArchive).Hash -ne $item.sha256) {
                 throw "SHA-256 verification failed for $name."
             }
-            & "$env:SystemRoot\System32\tar.exe" -xf $archive -C $stage
+            & "$env:SystemRoot\System32\tar.exe" -xf $inputArchive -C $stage
             if ($LASTEXITCODE -ne 0) { throw "Could not unpack $name." }
             $source = $stage
             if ($name -eq 'mariadb') { $source = Join-Path $stage "mariadb-$($item.version)-winx64" }
@@ -319,7 +325,7 @@ function Start-Academy {
             rootPassword = New-Secret
             databasePassword = New-Secret
             bootstrapPassword = New-Secret
-            courseFolder = $courses
+            courseFolder = 'courses'
         } | ConvertTo-Json)
     }
     $Config = Get-Content -LiteralPath $SettingsFile -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -341,9 +347,10 @@ function Start-Academy {
             Invoke-MoodlePhp @($provision, 'provision') 'Moodle database provisioning'
             $stateOfDb = Invoke-MoodlePhp @($provision, 'status') 'Moodle database check'
             if ($stateOfDb -eq 'empty') {
-                $persianName = -join (0x0622,0x06a9,0x0627,0x062f,0x0645,0x06cc,32,0x0633,0x06cc,0x0648,0x0627,0x0646 | ForEach-Object { [char]$_ })
-                Invoke-MoodlePhp @("$Site/admin/cli/install_database.php", '--agree-license', '--lang=fa', "--fullname=$persianName", "--shortname=$persianName", '--adminuser=admin', "--adminpass=$($Config.bootstrapPassword)", '--adminemail=admin@example.invalid') 'Moodle install'
+                $persianName = [string]::Concat([char[]](1570,1705,1575,1583,1605,1740,32,1587,1740,1608,1575,1606))
+                Invoke-MoodlePhp @("$Site/admin/cli/install_database.php", '--agree-license', '--lang=en', "--fullname=$persianName", "--shortname=$persianName", '--adminuser=admin', "--adminpass=$($Config.bootstrapPassword)", '--adminemail=admin@example.invalid') 'Moodle install'
             }
+            Invoke-MoodlePhp @("$PSScriptRoot/bootstrap-locale.php") 'Persian locale'
             Invoke-MoodlePhp @("$Site/local/seavan/cli/setup_categories.php") 'Course categories'
             foreach ($option in @('theme=seavan', 'guestloginbutton=0', 'defaulthomepage=/my/index.php')) {
                 $name, $value = $option.Split('=', 2)

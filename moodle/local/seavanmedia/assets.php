@@ -19,6 +19,8 @@ function sam_write_json(string $p,array $data): void {
     }
 }
 function sam_process(array $cmd,int $seconds): array {
+    global $CFG;
+    if (!empty($CFG->seavanlightmedia)) { return [1, '']; }
     $spec=[0=>['file','/dev/null','r'],1=>['pipe','w'],2=>['file','/dev/null','a']];
     $proc=proc_open(array_merge(['/usr/bin/timeout','--kill-after=5s',(string)$seconds],$cmd),$spec,$pipes,null,null,['bypass_shell'=>true]);
     if(!is_resource($proc)){return [1,''];}

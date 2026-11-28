@@ -852,6 +852,10 @@ function setup_get_remote_url() {
         //lighttpd - not officially supported
         $rurl['fullpath'] = $_SERVER['REQUEST_URI']; // TODO: verify this is always properly encoded
 
+    } else if (str_starts_with($_SERVER['SERVER_SOFTWARE'], 'Caddy/')) {
+        // The native Windows Caddy FastCGI transport provides the original request URI.
+        $rurl['fullpath'] = $_SERVER['REQUEST_URI'];
+
     } else if (stripos($_SERVER['SERVER_SOFTWARE'], 'nginx') !== false) {
         //nginx - not officially supported
         if (!isset($_SERVER['SCRIPT_NAME'])) {

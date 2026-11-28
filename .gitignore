@@ -21,3 +21,8 @@
 /courses2/
 /courses3/
 /diagnostics/
+
+# Native Windows runtime, credentials and local dependency bundles.
+/local-data/
+/windows-native/lang/
+/windows-native/offline/

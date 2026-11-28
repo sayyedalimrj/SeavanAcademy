@@ -37,9 +37,11 @@ $add('moodle/cohort:manage', 'گروه‌های آموزشی', 'مدیریت گ�
 $add('report/log:view', 'گزارش فعالیت', 'گزارش‌های استاندارد مودل', '/report/log/index.php', ['id'=>SITEID]);
 if (function_exists('local_seavanmedia_sync')) { $add('moodle/site:config','ورود خودکار دوره‌ها','شناسایی پوشه‌ها و ساخت دوره','/local/seavanmedia/sync.php'); }
 $add('moodle/site:config','مدیریت آرشیو','هاردها، بارگذاری و مجوز دانلود','/local/seavanmedia/archive.php');
-$add('moodle/site:config','صف پردازش','کارهای رسانه‌ای در انتظار و انجام‌شده','/local/seavanmedia/queue.php');
+if (empty($CFG->seavanlightmedia)) {
+    $add('moodle/site:config','صف پردازش','کارهای رسانه‌ای در انتظار و انجام‌شده','/local/seavanmedia/queue.php');
+}
 $add('moodle/site:config','سلامت سرور','دیسک‌ها، دیتابیس و اجرای وظایف','/local/seavanmedia/server.php');
-$add('moodle/site:config','سلامت کتابخانه','کدک، مدت، کاور و پردازش فایل‌ها','/local/seavanmedia/health.php');
+$add('moodle/site:config','سلامت کتابخانه',empty($CFG->seavanlightmedia) ? 'کدک، مدت، کاور و پردازش فایل‌ها' : 'فهرست دوره‌ها و تعداد فایل‌ها','/local/seavanmedia/health.php');
 $add('report/log:view','گزارش تماشای افراد','مدت و درصد مشاهده هر کاربر به تفکیک جلسه','/local/seavanmedia/report.php');
 $add('moodle/site:config', 'ظاهر و فونت', 'بارگذاری ایران‌سنس دارای مجوز', '/admin/settings.php', ['section'=>'themesettingseavan']);
 $add('moodle/site:config', 'تنظیمات سامانه', 'افزونه‌ها، امنیت و تنظیمات اصلی Moodle', '/admin/search.php');

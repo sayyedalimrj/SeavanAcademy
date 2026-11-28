@@ -18,11 +18,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Language pack and browser
+      - name: Stage offline dependencies and browser
         working-directory: Seavan Academy
         run: |
           Invoke-WebRequest -UseBasicParsing 'https://packaging.moodle.org/langpack/4.5/fa.zip' -OutFile "$env:RUNNER_TEMP/fa.zip"
           Expand-Archive -LiteralPath "$env:RUNNER_TEMP/fa.zip" -DestinationPath windows-native/lang
+          New-Item -ItemType Directory windows-native/offline -Force | Out-Null
+          $components = Get-Content windows-native/dependencies.json -Raw | ConvertFrom-Json
+          foreach ($component in $components.PSObject.Properties) {
+              Invoke-WebRequest -UseBasicParsing $component.Value.url -OutFile "windows-native/offline/$($component.Name).zip"
+          }
           python -m pip install playwright==1.51.0
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python -m playwright install chromium
@@ -35,11 +40,19 @@ jobs:
         run: |
           & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File windows-native/academy.ps1 -Action Start -NoBrowser
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          foreach ($endpoint in @('/config.php', '/admin/cli/cron.php', '/.git/config')) {
+              $status = curl.exe --silent --output NUL --write-out '%{http_code}' "http://127.0.0.1:8080$endpoint"
+              if ($status -ne '404') { throw "Private endpoint was reachable: $endpoint ($status)" }
+          }
           python tests/windows-first-login.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Import videos, test playback and Moodle quiz
         working-directory: Seavan Academy
         run: |
+          if (!(Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
+              choco install ffmpeg --no-progress -y
+              if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
           $course = 'courses/CI Media Course/Chapter 1'
           $other = 'courses/Other Course/Chapter 2'
           New-Item -ItemType Directory $course, $other -Force | Out-Null
@@ -67,6 +80,7 @@ jobs:
           }
           python -c "from pathlib import Path; p=Path('tests/windows-first-login.py').read_text(); ns={}; exec(p.split('client, response =')[0],ns); client,response=ns['login'](ns['admin_password']); assert '/login/' not in response.geturl(); assert b'sa-admin-panel' in client.open(ns['base']+'/local/seavan/index.php?view=manage').read()"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Get-Process caddy,mariadbd,php-cgi | Select-Object Name,Id,WorkingSet64,PrivateMemorySize64 | Format-Table
       - name: Print runtime diagnostics on failure
         if: failure()
         working-directory: Seavan Academy
