@@ -138,6 +138,14 @@ jobs:
           fi
           python3 tests/security-load.py /tmp/security-fixture.json
           python3 tests/download-smoke.py /tmp/security-fixture.json
+      - name: Test packaged protected playback, quizzes and viewing report
+        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          sed -i 's/^SEAVAN_PROTECTED_MEDIA=0$/SEAVAN_PROTECTED_MEDIA=1/' .env
+          docker compose up -d --no-build --no-deps --force-recreate web
+          curl --retry 10 --retry-all-errors --retry-delay 1 --max-time 5 -fsS http://127.0.0.1:8080/login/index.php -o /tmp/protected-login.html
+          /tmp/seavan-browser/bin/python tests/protected-playback.py /tmp/security-fixture.json
       - name: Restore a real backup in the test stack
         if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
         shell: bash
@@ -154,14 +162,6 @@ jobs:
             echo 'The post-backup setting survived restore'
             exit 1
           fi
-      - name: Test packaged protected playback, quizzes and viewing report
-        if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
-        run: |
-          set -euo pipefail
-          sed -i 's/^SEAVAN_PROTECTED_MEDIA=0$/SEAVAN_PROTECTED_MEDIA=1/' .env
-          docker compose up -d --no-build --no-deps --force-recreate web
-          curl --retry 5 --retry-connrefused -fsS http://127.0.0.1:8080/login/index.php -o /tmp/protected-login.html
-          /tmp/seavan-browser/bin/python tests/protected-playback.py /tmp/security-fixture.json
       - name: Test secure HTTPS proxy-mode login
         if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
         run: |
