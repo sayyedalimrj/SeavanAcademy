@@ -42,7 +42,9 @@ echo html_writer::start_div('sam');
 echo html_writer::start_div('sam-coursehead');
 echo html_writer::div(html_writer::link(new moodle_url('/course/index.php'),'بازگشت به کتابخانه'),'sam-crumb');
 echo html_writer::tag('h1',format_string($course->fullname),['class'=>'sam-course-title']);
-echo html_writer::link(new moodle_url('/local/seavanmedia/quizzes.php', ['id' => $id]), 'آزمون‌های دوره', ['class' => 'btn btn-outline-primary']);
+echo html_writer::link(new moodle_url('/local/seavanmedia/quizzes.php', ['id' => $id]), 'آزمون‌های دوره', ['class' => 'btn btn-outline-primary mr-2']);
+echo html_writer::link(new moodle_url('/local/seavanmedia/quizzes.php', ['id' => $id, 'evaluation' => 1]),
+    'ارزیابی استاد', ['class' => 'btn btn-outline-primary']);
 
 echo html_writer::end_div();
 if(!$files){echo html_writer::div('فایل‌های این دوره هنوز در مسیر سرور در دسترس نیستند.','alert alert-info');echo html_writer::end_div();echo $OUTPUT->footer();exit;}

@@ -42,7 +42,9 @@ if (empty($CFG->seavanlightmedia)) {
 }
 $add('moodle/site:config','سلامت سرور','دیسک‌ها، دیتابیس و اجرای وظایف','/local/seavanmedia/server.php');
 $add('moodle/site:config','سلامت کتابخانه',empty($CFG->seavanlightmedia) ? 'کدک، مدت، کاور و پردازش فایل‌ها' : 'فهرست دوره‌ها و تعداد فایل‌ها','/local/seavanmedia/health.php');
-$add('report/log:view','گزارش تماشای افراد','مدت و درصد مشاهده هر کاربر به تفکیک جلسه','/local/seavanmedia/report.php');
+$add('report/log:view','گزارش تماشای افراد','درصد تماشای همهٔ فراگیران به تفکیک دوره و جلسه','/local/seavanmedia/report.php');
+$add('moodle/course:manageactivities','مدیریت آزمون‌ها','ساخت آزمون و مشاهده نمرات در مودل','/local/seavanmedia/quizzes.php',['manage'=>1]);
+$add('moodle/course:manageactivities','ارزیابی استاد','ساخت فرم ۲۰ سؤالی و مشاهده نتایج','/local/seavanmedia/quizzes.php',['manage'=>1,'evaluation'=>1]);
 $add('moodle/site:config', 'ظاهر و فونت', 'بارگذاری ایران‌سنس دارای مجوز', '/admin/settings.php', ['section'=>'themesettingseavan']);
 $add('moodle/site:config', 'تنظیمات سامانه', 'افزونه‌ها، امنیت و تنظیمات اصلی Moodle', '/admin/search.php');
 if ($view === 'manage' && has_capability('moodle/site:config', $context) && (int)(get_admin()->id ?? 0) === (int)$USER->id) {

@@ -31,7 +31,7 @@ $menu = $primary->export_for_template($OUTPUT);
 $active = $PAGE->url->get_path();
 $view = optional_param('view','home',PARAM_ALPHA);
 $islearningmedia = str_contains($active, '/local/seavanmedia/') &&
-    in_array(basename($active), ['view.php', 'downloads.php', 'request.php', 'quizzes.php'], true);
+    in_array(basename($active), ['view.php', 'downloads.php', 'request.php'], true);
 $manage = has_capability('moodle/site:config', context_system::instance()) ||
     has_capability('moodle/site:uploadusers', context_system::instance()) ||
     has_capability('moodle/user:create', context_system::instance()) ||
@@ -43,9 +43,16 @@ $links = [
     ['text'=>'آموزش‌ها','library'=>true,'url'=>new moodle_url('/course/index.php'),'active'=>$islearningmedia || str_ends_with($active,'/course/index.php') || str_ends_with($active,'/my/index.php')],
     ['text'=>'یادگیری من','learning'=>true,'url'=>new moodle_url('/my/courses.php'),'active'=>str_ends_with($active,'/my/courses.php')],
 ];
+$activitypage = str_ends_with($active, '/local/seavanmedia/quizzes.php');
+$manageactivities = $activitypage && optional_param('manage', false, PARAM_BOOL);
+$evaluation = $activitypage && optional_param('evaluation', false, PARAM_BOOL);
+$links[] = ['text'=>'آزمون‌ها','learning'=>true,'url'=>new moodle_url('/local/seavanmedia/quizzes.php'),
+    'active'=>$activitypage && !$manageactivities && !$evaluation];
+$links[] = ['text'=>'ارزیابی استاد','learning'=>true,'url'=>new moodle_url('/local/seavanmedia/quizzes.php',['evaluation'=>1]),
+    'active'=>$activitypage && !$manageactivities && $evaluation];
 if ($manage || ($view === 'manage' && str_ends_with($active,'/local/seavan/index.php'))) {
     $links[] = ['text'=>'مدیریت','management'=>true,'url'=>new moodle_url('/local/seavan/index.php',['view'=>'manage']),
-        'active'=>(str_contains($active,'/local/seavanmedia/') && !$islearningmedia) || (str_ends_with($active,'/local/seavan/index.php') && $view==='manage')];
+        'active'=>(str_contains($active,'/local/seavanmedia/') && !$islearningmedia && (!$activitypage || $manageactivities)) || (str_ends_with($active,'/local/seavan/index.php') && $view==='manage')];
 }
 foreach ($links as &$link) { $link['url'] = $link['url']->out(false); }
 unset($link);
