@@ -1,0 +1,84 @@
+name: Native Windows Moodle
+on:
+  push:
+    branches: [release/windows-native]
+  workflow_dispatch:
+
+jobs:
+  native-windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: Seavan Academy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Language pack and browser
+        working-directory: Seavan Academy
+        run: |
+          Invoke-WebRequest -UseBasicParsing 'https://packaging.moodle.org/langpack/4.5/fa.zip' -OutFile "$env:RUNNER_TEMP/fa.zip"
+          Expand-Archive -LiteralPath "$env:RUNNER_TEMP/fa.zip" -DestinationPath windows-native/lang
+          python -m pip install playwright==1.51.0
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python -m playwright install chromium
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $secret = 'X1!' + [Guid]::NewGuid().ToString('N') + 'a'
+          Write-Output "::add-mask::$secret"
+          Add-Content $env:GITHUB_ENV "SEAVAN_TEST_PASSWORD=$secret"
+      - name: Start native server and rotate password
+        working-directory: Seavan Academy
+        run: |
+          & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File windows-native/academy.ps1 -Action Start -NoBrowser
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python tests/windows-first-login.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Import videos, test playback and Moodle quiz
+        working-directory: Seavan Academy
+        run: |
+          $course = 'courses/CI Media Course/Chapter 1'
+          $other = 'courses/Other Course/Chapter 2'
+          New-Item -ItemType Directory $course, $other -Force | Out-Null
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=black:s=160x90:r=15 -t 12 -an -c:v libvpx -threads 1 -y "$course/02 - Browser.webm"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Copy-Item -LiteralPath "$course/02 - Browser.webm" -Destination "$course/01 - Sample.webm"
+          Copy-Item -LiteralPath "$course/02 - Browser.webm" -Destination "$other/01 - Other.webm"
+          foreach ($file in Get-ChildItem courses -Recurse -File -Filter '*.webm') {
+              $file.LastWriteTimeUtc = [DateTime]::UtcNow.AddMinutes(-10)
+          }
+          & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File windows-native/academy.ps1 -Action Sync
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $env:SEAVAN_NATIVE_STATE = Join-Path (Get-Location).Path 'local-data'
+          $fixture = & local-data/runtime/php-8.3.37/php.exe -c local-data/php.ini tests/security-fixture.php
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $fixture | Set-Content -Encoding Ascii "$env:RUNNER_TEMP/seavan-fixture.json"
+          python tests/protected-playback.py "$env:RUNNER_TEMP/seavan-fixture.json"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Restart and verify persisted password
+        working-directory: Seavan Academy
+        run: |
+          foreach ($action in @('Stop', 'Start')) {
+              & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File windows-native/academy.ps1 -Action $action -NoBrowser
+              if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+          python -c "from pathlib import Path; p=Path('tests/windows-first-login.py').read_text(); ns={}; exec(p.split('client, response =')[0],ns); client,response=ns['login'](ns['admin_password']); assert '/login/' not in response.geturl(); assert b'sa-admin-panel' in client.open(ns['base']+'/local/seavan/index.php?view=manage').read()"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Print runtime diagnostics on failure
+        if: failure()
+        working-directory: Seavan Academy
+        run: |
+          if (Test-Path -LiteralPath local-data) {
+              Get-ChildItem local-data -File -Filter '*.log' | ForEach-Object {
+                  Write-Host $_.Name
+                  Get-Content -LiteralPath $_.FullName -Tail 35
+              }
+          }
+      - name: Stop native processes
+        if: always()
+        working-directory: Seavan Academy
+        run: |
+          & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File windows-native/academy.ps1 -Action Stop -NoBrowser

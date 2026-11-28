@@ -6,13 +6,25 @@ function local_seavanmedia_root(): string {
 }
 function sam_roots(): array {
     global $CFG;
-    $roots=['main'=>local_seavanmedia_root(),'disk2'=>'/srv/seavan-courses2','disk3'=>'/srv/seavan-courses3','uploads'=>$CFG->dataroot.'/seavan-uploads'];
-    return $roots;
+    $roots=$CFG->seavanmediaroots ?? ['main'=>local_seavanmedia_root(),'disk2'=>'/srv/seavan-courses2','disk3'=>'/srv/seavan-courses3'];
+    return $roots + ['uploads' => $CFG->dataroot . '/seavan-uploads'];
 }
+function sam_realpath(string $path): string|false {
+    $resolved = realpath($path);
+    if ($resolved !== false && DIRECTORY_SEPARATOR === chr(92)) {
+        return str_replace(chr(92), '/', $resolved);
+    }
+    return $resolved;
+}
+
+function sam_path_prefix(string $path): string {
+    return rtrim($path, '/') . '/';
+}
+
 function sam_root_for(string $folder): ?string {
     foreach(sam_roots() as $root){
-        $real=realpath($root);
-        if($real&&str_starts_with($folder,$real.'/')){return $real;}
+        $real=sam_realpath($root);
+        if($real&&str_starts_with($folder,sam_path_prefix($real))){return $real;}
     }
     return null;
 }
@@ -34,14 +46,14 @@ function local_seavanmedia_is_course($course): bool {
 function local_seavanmedia_folders(): array {
     $out=[];$conflicts=[];
     foreach(sam_roots() as $label=>$rootpath){
-        $root=realpath($rootpath);
+        $root=sam_realpath($rootpath);
         if(!$root||!is_dir($root)||!is_readable($root)){continue;}
         $walk=function(string $dir,string $prefix='',int $depth=0)use(&$walk,&$out,&$conflicts,$root,$label){
             if($depth>12){return;}
             foreach(new DirectoryIterator($dir) as $entry){
                 if($entry->isDot()||$entry->isLink()||!$entry->isDir()||str_starts_with($entry->getFilename(),'.')){continue;}
-                $path=$entry->getRealPath();
-                if(!$path||!str_starts_with($path,$root.'/')||!is_readable($path)||is_file($path.'/.seavan-ignore')){continue;}
+                $path=sam_realpath($entry->getPathname());
+                if(!$path||!str_starts_with($path,sam_path_prefix($root))||!is_readable($path)||is_file($path.'/.seavan-ignore')){continue;}
                 $rel=$prefix.$entry->getFilename();
                 if(is_file($path.'/.seavan-category')&&!is_link($path.'/.seavan-category')){$walk($path,$rel.'/', $depth+1);continue;}
                 $identity=local_seavanmedia_idnumber(($label==='main'?'':$label.'/').$rel);
@@ -64,7 +76,7 @@ function local_seavanmedia_normalize(string $name): string {
 }
 function local_seavanmedia_scan(string $folder): array {
     $out = [];
-    $base = realpath($folder);
+    $base = sam_realpath($folder);
     if (!$base || !is_dir($base)) { return []; }
     $aliases=[];$manifest=$base.'/.seavan-aliases.json';
     if(is_file($manifest)&&!is_link($manifest)&&filesize($manifest)<1048576){$aliases=json_decode(file_get_contents($manifest),true)?:[];}
@@ -80,9 +92,9 @@ function local_seavanmedia_scan(string $folder): array {
         if (!$file->isFile() || !$file->isReadable() || $file->isLink() || $file->getSize() <= 0 || $file->getMTime() > time()-120) { continue; }
         $ext = strtolower($file->getExtension());
         if (!isset($exts[$ext])) { continue; }
-        $path = $file->getRealPath();
-        if (!$path || !str_starts_with($path,$base.'/')) { continue; }
-        $rel = substr($path,strlen($base)+1);
+        $path = sam_realpath($file->getPathname());
+        if (!$path || !str_starts_with($path,sam_path_prefix($base))) { continue; }
+        $rel = substr($path,strlen(sam_path_prefix($base)));
         $fingerprint = hash('sha256',$rel."\0".$file->getSize()."\0".$file->getMTime());
         $alias=$aliases[$rel]??'';
         $key=is_string($alias)&&preg_match('/^[a-f0-9]{64}$/D',$alias)?$alias:$fingerprint;
@@ -138,9 +150,9 @@ function sam_validate_media_file(array $file, string $folder, string $key): arra
     // Cached inventory is not authorization. Recheck the actual path and fingerprint.
     clearstatcache(true, $file['path']);
     $root = sam_root_for($folder);
-    $path = realpath($file['path']);
-    if (!$root || !$folder || !$path || !str_starts_with($folder,$root.'/') ||
-        !str_starts_with($path,$folder.'/') || $path !== $file['path'] ||
+    $path = sam_realpath($file['path']);
+    if (!$root || !$folder || !$path || !str_starts_with($folder,sam_path_prefix($root)) ||
+        !str_starts_with($path,sam_path_prefix($folder)) || $path !== $file['path'] ||
         !is_file($path) || !is_readable($path) || is_link($file['path']) ||
         hash('sha256',$file['rel']."\0".filesize($path)."\0".filemtime($path)) !== ($file['fingerprint']??$key)) {
         throw new moodle_exception('mediaunavailable','local_seavanmedia');
@@ -151,7 +163,7 @@ function local_seavanmedia_category_for_folder($basecat, string $folder) {
     global $DB;
     $root = sam_root_for($folder);
     if(!$root){return $basecat;}
-    $rel = substr($folder,strlen($root)+1);
+    $rel = substr($folder,strlen(sam_path_prefix($root)));
     $parts = explode('/',$rel);
     array_pop($parts);
     $parent = $basecat;

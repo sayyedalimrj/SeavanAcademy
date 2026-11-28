@@ -9,6 +9,9 @@ if (!$admin) {
 }
 $local = $CFG->wwwroot === 'http://127.0.0.1:8080' && getenv('SEAVAN_BIND_IP') === '127.0.0.1';
 if (in_array('--initialize', $argv, true)) {
+    if ($local && in_array('--if-needed', $argv, true) && get_config('local_seavan', 'localbootstrap')) {
+        exit(0);
+    }
     if (!$local || getenv('SEAVAN_BOOTSTRAP_LOCAL') !== '1' || $admin->username !== 'admin' ||
             !validate_internal_user_password($admin, (string)getenv('ADMIN_PASSWORD')) ||
             get_config('local_seavan', 'localbootstrap')) {

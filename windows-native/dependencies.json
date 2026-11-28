@@ -1,0 +1,20 @@
+{
+  "php": {
+    "version": "8.3.37",
+    "url": "https://www.php.net/~windows/releases/php-8.3.37-nts-Win32-vs16-x64.zip",
+    "sha256": "38808a798485e1c0938dfcce7e942131415fc6c7834f83a5a85a4c4edb5539d6",
+    "executable": "php.exe"
+  },
+  "caddy": {
+    "version": "2.11.9",
+    "url": "https://github.com/caddyserver/caddy/releases/download/v2.11.9/caddy_2.11.9_windows_amd64.zip",
+    "sha256": "ad93112d335ee687100c4c9f11bced16ca590377976b7fe7883882b9e797e472",
+    "executable": "caddy.exe"
+  },
+  "mariadb": {
+    "version": "11.4.14",
+    "url": "https://archive.mariadb.org/mariadb-11.4.14/winx64-packages/mariadb-11.4.14-winx64.zip",
+    "sha256": "9d9b410eb7b65f6616f29d933d76ee90cf7af4ba179a2d437e0f09f5bf6650df",
+    "executable": "bin/mariadbd.exe"
+  }
+}

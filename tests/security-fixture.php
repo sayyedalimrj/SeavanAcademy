@@ -1,6 +1,7 @@
 <?php
 define('CLI_SCRIPT',true);
-require('/var/www/html/config.php');
+$localconfig = __DIR__ . '/../moodle/config.php';
+require is_file($localconfig) ? $localconfig : '/var/www/html/config.php';
 require_once($CFG->dirroot.'/user/lib.php');
 require_once($CFG->dirroot.'/local/seavanmedia/lib.php');
 require_once($CFG->dirroot.'/local/seavanmedia/bundlelib.php');

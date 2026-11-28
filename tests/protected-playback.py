@@ -1,12 +1,16 @@
 """Exercise the packaged protected media policy using the actual Moodle browser UI."""
 import json
+import os
 import sys
 from urllib.parse import parse_qs, urlencode, urlsplit
 from playwright.sync_api import expect, sync_playwright
 
 base = 'http://127.0.0.1:8080'
 fixture = json.load(open(sys.argv[1]))
-settings = dict(line.strip().split('=', 1) for line in open('.env') if '=' in line)
+admin_password = os.getenv('SEAVAN_TEST_PASSWORD')
+if admin_password is None:
+    with open('.env') as env_file:
+        admin_password = dict(line.strip().split('=', 1) for line in env_file if '=' in line)['ADMIN_PASSWORD']
 origin = f'{base}/local/seavanmedia'
 course = fixture['course']
 identity = {'id': course, 'file': fixture['webmkey']}
@@ -61,7 +65,7 @@ with sync_playwright() as p:
     print('PASS: enrolled learner started a native Moodle quiz with a real question.', flush=True)
 
     admin = browser.new_page()
-    sign_in(admin, 'admin', settings['ADMIN_PASSWORD'])
+    sign_in(admin, 'admin', admin_password)
     admin.goto(origin + '/report.php?' + urlencode({'course': course}))
     expect(admin.get_by_role('columnheader', name='مدت مشاهده')).to_be_visible()
     baseline = admin.get_by_role('row').filter(has_text='01 - Sample')
