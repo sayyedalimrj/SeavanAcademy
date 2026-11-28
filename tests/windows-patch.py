@@ -78,7 +78,7 @@ with sync_playwright() as runner:
         }
         if (selected.size !== 20) throw Error('Expected 20 distinct questions');
     }""")
-    student.locator('input[type=submit]').last.click()
+    student.locator('input[name=savevalues]').click()
     expect(student.locator('body')).to_contain_text('ارزیابی شما ثبت شد.')
     admin.goto(evaluation_url)
     admin.get_by_role('link', name='نتایج').click()
