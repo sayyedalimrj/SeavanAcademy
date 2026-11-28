@@ -90,7 +90,9 @@ with sync_playwright() as runner:
     requestrow.get_by_role('button', name='پذیرش و ثبت‌نام').click()
     expect(requestrow.get_by_text('تأیید شد', exact=True)).to_be_visible()
     admin.goto(base + '/user/index.php?' + urlencode({'id': other}))
-    expect(admin.get_by_text('CI Unstarted', exact=True).first).to_be_visible()
+    expect(admin.get_by_role('row').filter(has_text='CI Unstarted')).to_be_visible()
+    student.goto(origin + '/enrolrequests.php?' + urlencode({'id': other}))
+    expect(student.get_by_role('link', name='ورود به دوره')).to_be_visible()
     print('PASS: learner requests access, and approval creates a native Moodle participant.', flush=True)
 
     admin.goto(origin + '/checkpoints.php?' + urlencode({'id': course}))

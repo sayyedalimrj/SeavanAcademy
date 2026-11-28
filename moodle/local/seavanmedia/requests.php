@@ -36,13 +36,13 @@ $PAGE->set_context($context);
 $PAGE->set_url($url);
 $PAGE->set_pagelayout(($CFG->theme ?? '') === 'seavan' ? 'seavanworkspace' : 'standard');
 $PAGE->add_body_class('seavan-workspace');
-$PAGE->set_title('درخواست‌های آموزش');
-$PAGE->set_heading('درخواست‌های آموزش');
+$PAGE->set_title('پیام‌ها و درخواست‌های آموزش');
+$PAGE->set_heading('پیام‌ها و درخواست‌های آموزش');
 
 echo $OUTPUT->header();
 echo html_writer::start_div('seavan-shell');
 echo html_writer::div(html_writer::link(new moodle_url('/local/seavan/index.php', ['view' => 'manage']), 'بازگشت به مرکز مدیریت'), 'sa-admin-back');
-echo html_writer::tag('h1', 'درخواست‌های آموزش', ['class' => 'sa-page-title']);
+echo html_writer::tag('h1', 'پیام‌ها و درخواست‌های آموزش', ['class' => 'sa-page-title']);
 echo html_writer::start_tag('nav', ['class' => 'sa-subnav', 'aria-label' => 'فیلتر درخواست‌ها']);
 foreach (['unread' => 'خوانده‌نشده', 'all' => 'همه درخواست‌ها'] as $value => $label) {
     echo html_writer::link(new moodle_url($url, ['filter' => $value]), $label, $url->get_param('filter') === $value ? ['aria-current' => 'page'] : []);

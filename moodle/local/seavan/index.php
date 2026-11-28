@@ -120,11 +120,13 @@ if ($view==='mine' && $query==='' && !$categoryid && !$favonly) {
     echo $tile(new moodle_url('/grade/report/overview/index.php'), 'کارنامهٔ من', 'نمرات مودل به تفکیک دوره', 'i/grades', true);
     if (!empty($CFG->messaging) && has_capability('moodle/site:sendmessage', $context)) {
         echo $tile(new moodle_url('/message/index.php'), 'پیام‌ها', 'گفتگو و جست‌وجوی همکاران', 'i/sendmessage', true);
-        $administrator = get_admin();
-        if ($administrator && $administrator->id != $USER->id && \core_message\api::can_send_message($administrator->id, $USER->id)) {
-            echo $tile(new moodle_url('/message/index.php', ['id' => $administrator->id]),
-                'پیام به مدیر', 'ارسال پیام در مودل', 'i/notifications', true);
-        }
+    }
+    $administrator = get_admin();
+    if ($administrator && $administrator->id != $USER->id) {
+        $canmessage = !empty($CFG->messaging) && \core_message\api::can_send_message($administrator->id, $USER->id);
+        $contact = $canmessage ? new moodle_url('/message/index.php', ['id' => $administrator->id]) :
+            new moodle_url('/local/seavanmedia/request.php', ['contact' => 1]);
+        echo $tile($contact, 'پیام به مدیر', 'ارسال از طریق مودل', 'i/notifications', true);
     }
     echo html_writer::end_div();
     if (function_exists('local_seavanmedia_is_course')) {

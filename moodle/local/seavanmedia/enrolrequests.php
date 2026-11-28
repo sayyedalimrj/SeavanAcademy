@@ -67,7 +67,7 @@ if (data_submitted()) {
                 if (!$instance || !array_key_exists($role, get_assignable_roles($ctx))) {
                     throw new moodle_exception('invalidrequest');
                 }
-                enrol_get_plugin('manual')->enrol_user($instance, $target, $role, time(), 0, ENROL_USER_ACTIVE);
+                enrol_get_plugin('manual')->enrol_user($instance, $target, $role, time() - 1, 0, ENROL_USER_ACTIVE);
             }
             $previous['status'] = $action === 'approve' ? 'approved' : 'declined';
             set_user_preference($preference, json_encode($previous, JSON_UNESCAPED_UNICODE), $target);
