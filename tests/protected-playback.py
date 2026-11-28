@@ -9,7 +9,8 @@ fixture = json.load(open(sys.argv[1]))
 settings = dict(line.strip().split('=', 1) for line in open('.env') if '=' in line)
 origin = f'{base}/local/seavanmedia'
 course = fixture['course']
-identity = {'id': course, 'file': fixture['key']}
+identity = {'id': course, 'file': fixture['webmkey']}
+assert identity['file'], 'Expected a WebM fixture supported by headless Chromium.'
 
 
 def sign_in(page, username, password):
@@ -28,16 +29,19 @@ with sync_playwright() as p:
     player = learner.locator('#sam-player')
     expect(player).to_have_attribute('controlslist', 'nodownload noremoteplayback')
     expect(learner.locator('.sam-watermark')).to_contain_text('Learner')
-    learner.wait_for_function("document.querySelector('#sam-player').readyState >= 1")
-    player.evaluate("(video) => video.play()")
-    learner.wait_for_function("document.querySelector('#sam-player').currentTime > 0.2")
     stream = learner.locator('#sam-player source').get_attribute('src')
     token = {key: values[0] for key, values in parse_qs(urlsplit(stream).query).items()}
     assert token['ticket'] and token['until'], 'Stream did not use a playback ticket'
     assert learner.request.get(stream, headers={'Sec-Fetch-Dest': 'document'}).status == 404
     assert learner.request.get(stream, headers={'Sec-Fetch-Site': 'cross-site'}).status == 404
     response = learner.request.get(stream, headers={'Range': 'bytes=0-15'})
-    assert response.status == 206 and len(response.body()) == 16 and 'no-store' in response.headers['cache-control']
+    assert response.status == 206 and len(response.body()) == 16 and 'no-store' in response.headers['cache-control'], (
+        'The signed stream did not return a protected byte range', response.status
+    )
+    learner.wait_for_function("document.querySelector('#sam-player').readyState >= 1")
+    player.evaluate("(video) => video.play()")
+    learner.wait_for_function("document.querySelector('#sam-player').currentTime > 0.2")
+    print('PASS: actual protected WebM playback and session-bound byte ranges.', flush=True)
     assert learner.request.get(origin + '/file.php?' + urlencode(identity)).status == 404
     assert 'video/' not in learner.request.get(stream + '&download=1').headers.get('content-type', '')
     expect(learner.get_by_role('link', name='دانلود دوره', exact=True)).to_have_count(0)
@@ -51,6 +55,7 @@ with sync_playwright() as p:
     learner.locator('.quizstartbuttondiv button').click()
     learner.wait_for_url('**/mod/quiz/attempt.php?**')
     expect(learner.locator('.que.truefalse')).to_be_visible()
+    print('PASS: enrolled learner started a native Moodle quiz with a real question.', flush=True)
 
     admin = browser.new_page()
     sign_in(admin, 'admin', settings['ADMIN_PASSWORD'])

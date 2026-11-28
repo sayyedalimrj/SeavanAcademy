@@ -64,6 +64,7 @@ if (count($parts) !== 3 || array_keys($parts[0]['files']) !== ['a', 'b'] ||
 }
 echo json_encode([
     'course' => $c->id, 'key' => $key, 'other' => $other->id, 'otherkey' => $otherkey,
+    'webmkey' => array_key_first(array_filter($files, static fn($file) => $file['mime'] === 'video/webm')),
     'otherrevision' => sam_bundle_revision($otherfiles),
     'otherfiles' => array_map(fn($file) => ['rel' => $file['rel'], 'group' => $file['group']], $otherfiles),
 ]);
