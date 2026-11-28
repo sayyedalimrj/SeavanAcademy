@@ -1,11 +1,26 @@
 <?php
 require(__DIR__.'/../../config.php');
 require_once(__DIR__.'/lib.php');require_once(__DIR__.'/assets.php');
+
 $id=required_param('id',PARAM_INT);
 $course=local_seavanmedia_require_course($id);
-$files=local_seavanmedia_course_files($course);
+$visibility = sam_session_visibility($course);
+$files = array_filter(local_seavanmedia_course_files($course),
+    static fn($file) => $visibility[sam_session_id($file)] ?? true);
 $history=local_seavanmedia_progress($id);
 $key=optional_param('file','',PARAM_ALPHANUM);
+$pathid = optional_param('pathid', '', PARAM_ALPHANUM);
+if ($pathid) {
+    foreach ($files as $candidate) {
+        if (sam_session_id($candidate) === $pathid) {
+            $key = $candidate['key'];
+            break;
+        }
+    }
+    if (!$key) {
+        throw new moodle_exception('mediaunavailable', 'local_seavanmedia');
+    }
+}
 if($key!==''&&!isset($files[$key])){throw new moodle_exception('mediaunavailable','local_seavanmedia');}
 if(!$key){
     // Resume the latest unfinished item. If it was completed, choose the next unfinished item.
@@ -28,6 +43,7 @@ $PAGE->set_url(new moodle_url('/local/seavanmedia/view.php',['id'=>$id,'file'=>$
 $PAGE->set_pagelayout(($CFG->theme ?? '') === 'seavan' ? 'seavanworkspace' : 'standard');$PAGE->add_body_class('seavan-workspace');$PAGE->set_title(format_string($course->fullname));$PAGE->set_heading(format_string($course->fullname));
 $PAGE->requires->css('/local/seavanmedia/style.css');
 $PAGE->requires->js_call_amd('local_seavanmedia/player','init');
+$PAGE->requires->js(new moodle_url('/local/seavanmedia/checkpoint.js'));
 $protected = !empty($CFG->seavanprotectedmedia);
 if ($protected) {
     $PAGE->requires->js_init_code("document.querySelector('.sam-player-wrap')?.addEventListener('contextmenu', event => event.preventDefault());");
@@ -46,9 +62,35 @@ echo html_writer::link(new moodle_url('/local/seavanmedia/quizzes.php', ['id' =>
 echo html_writer::link(new moodle_url('/local/seavanmedia/quizzes.php', ['id' => $id, 'evaluation' => 1]),
     'ارزیابی استاد', ['class' => 'btn btn-outline-primary']);
 
+echo html_writer::link(new moodle_url('/course/view.php', ['id' => $id]), 'صفحه دوره در مودل', ['class' => 'btn btn-outline-primary']);
+if (has_capability('moodle/course:manageactivities', $ctx)) {
+    echo html_writer::link(new moodle_url('/local/seavanmedia/checkpoints.php', ['id' => $id]), 'آزمون و نظرسنجی کنار ویدیو',
+        ['class' => 'btn btn-outline-primary']);
+}
 echo html_writer::end_div();
 if(!$files){echo html_writer::div('فایل‌های این دوره هنوز در مسیر سرور در دسترس نیستند.','alert alert-info');echo html_writer::end_div();echo $OUTPUT->footer();exit;}
 $f=$files[$key];$p=$history[$key]??null;$meta=sam_metadata($id,$key);
+$checkpointpanel = '';
+$checkpoints = json_decode(get_config('local_seavanmedia', 'checkpoints_' . $id) ?: '{}', true) ?: [];
+if ($checkpoints) {
+    $items = '';
+    $cms = get_fast_modinfo($course)->get_cms();
+    foreach ($checkpoints as $entry) {
+        $cm = $cms[$entry['activity']] ?? null;
+        if ($entry['session'] !== sam_session_id($f) || !$cm || !$cm->uservisible || !$cm->url || $cm->deletioninprogress) {
+            continue;
+        }
+        $name = format_string($cm->name);
+        $items .= html_writer::div(html_writer::link($cm->url, $name, ['class' => 'btn btn-primary my-1']),
+            '', ['hidden' => 'hidden', 'data-timing' => $entry['timing'], 'data-seconds' => $entry['seconds'],
+                'data-title' => strip_tags($name)]);
+    }
+    if ($items !== '') {
+        $checkpointpanel = html_writer::div(html_writer::tag('p', '', ['aria-live' => 'polite', 'data-sa-checkpoint-notice' => '1']) . $items,
+            'card p-3 mb-3', ['hidden' => 'hidden', 'data-sa-checkpoints' => '1']);
+    }
+}
+
 $note=json_decode(get_user_preferences('seavanmedia_note_'.$id.'_'.$key,'{}'),true)?:[];
 $converted=is_file(sam_asset_dir($id,$key).'/converted.mp4');
 $low=is_file(sam_asset_dir($id,$key).'/480.mp4');
@@ -110,6 +152,7 @@ if(in_array($f['kind'],['video','audio'],true)){
     if($p&&$p->position>3){echo html_writer::tag('button','از ابتدا',['id'=>'sam-restart','type'=>'button','class'=>'btn btn-outline-secondary']);}
     echo html_writer::end_div();
     echo html_writer::div('بخش‌های مشاهده‌شده: '.html_writer::tag('strong',$digits($p->percent??0).'٪',['id'=>'sam-percent']).' — '.html_writer::tag('span','ذخیره خودکار',['id'=>'sam-state','role'=>'status']),'sam-muted');
+    echo $checkpointpanel;
     echo html_writer::div('', 'sam-watched-track',['id'=>'sam-watched-track','role'=>'img','aria-label'=>'بازه‌های مشاهده‌شده فیلم']);
 
 

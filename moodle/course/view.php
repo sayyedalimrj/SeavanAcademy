@@ -116,19 +116,6 @@ if (file_exists($CFG->dirroot . '/course/externservercourse.php')) {
     }
 }
 
-// Open the video library directly on the native course route for everyday learning.
-// Explicit editing, section and role-switch requests retain the original Moodle behaviour.
-if ($course->id != SITEID && !optional_param('classic', false, PARAM_BOOL) &&
-        $edit === -1 && !$hide && !$show && !$duplicatesection && !$move &&
-        $marker === -1 && $switchrole === -1 && !$sectionid && $section === null &&
-        $expandsection === -1 && !$return && empty($USER->editing) &&
-        ($_SERVER['REQUEST_METHOD'] ?? '') === 'GET' && !isguestuser() &&
-        (is_enrolled($context,null,'',true) || has_capability('moodle/course:update',$context)) &&
-        str_starts_with((string)$course->idnumber,'seavanmedia:') &&
-        is_readable($CFG->dirroot.'/local/seavanmedia/view.php')) {
-    redirect(new moodle_url('/local/seavanmedia/view.php',['id'=>$course->id]));
-}
-
 require_once($CFG->dirroot.'/calendar/lib.php'); // This is after login because it needs $USER.
 
 // Must set layout before gettting section info. See MDL-47555.

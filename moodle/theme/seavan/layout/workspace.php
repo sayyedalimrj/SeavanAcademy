@@ -41,7 +41,8 @@ $manage = has_capability('moodle/site:config', context_system::instance()) ||
     has_capability('report/log:view', context_system::instance());
 $links = [
     ['text'=>'آموزش‌ها','library'=>true,'url'=>new moodle_url('/course/index.php'),'active'=>$islearningmedia || str_ends_with($active,'/course/index.php') || str_ends_with($active,'/my/index.php')],
-    ['text'=>'یادگیری من','learning'=>true,'url'=>new moodle_url('/my/courses.php'),'active'=>str_ends_with($active,'/my/courses.php')],
+    ['text'=>'یادگیری من','learning'=>true,'url'=>new moodle_url('/my/courses.php'),'active'=>(str_ends_with($active,'/my/courses.php') || str_ends_with($active, '/enrolrequests.php') &&
+        !optional_param('manage', false, PARAM_BOOL))],
 ];
 $activitypage = str_ends_with($active, '/local/seavanmedia/quizzes.php');
 $manageactivities = $activitypage && optional_param('manage', false, PARAM_BOOL);
@@ -52,7 +53,8 @@ $links[] = ['text'=>'ارزیابی استاد','learning'=>true,'url'=>new mood
     'active'=>$activitypage && !$manageactivities && $evaluation];
 if ($manage || ($view === 'manage' && str_ends_with($active,'/local/seavan/index.php'))) {
     $links[] = ['text'=>'مدیریت','management'=>true,'url'=>new moodle_url('/local/seavan/index.php',['view'=>'manage']),
-        'active'=>(str_contains($active,'/local/seavanmedia/') && !$islearningmedia && (!$activitypage || $manageactivities)) || (str_ends_with($active,'/local/seavan/index.php') && $view==='manage')];
+        'active'=>(str_contains($active,'/local/seavanmedia/') && !$islearningmedia && (!$activitypage || $manageactivities) &&
+            (!str_ends_with($active, '/enrolrequests.php') || optional_param('manage', false, PARAM_BOOL))) || (str_ends_with($active,'/local/seavan/index.php') && $view==='manage')];
 }
 foreach ($links as &$link) { $link['url'] = $link['url']->out(false); }
 unset($link);

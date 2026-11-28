@@ -1,5 +1,6 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
+require_once(__DIR__ . '/integration.php');
 
 function local_seavanmedia_root(): string {
     return '/srv/seavan-courses';
@@ -141,6 +142,10 @@ function local_seavanmedia_require_course(int $id) {
 function local_seavanmedia_get_file($course,string $key): array {
     $files = local_seavanmedia_course_files($course);
     if (!isset($files[$key])) { throw new moodle_exception('mediaunavailable','local_seavanmedia'); }
+    $access = sam_session_visibility($course);
+    if (isset($access[sam_session_id($files[$key])]) && !$access[sam_session_id($files[$key])]) {
+        throw new moodle_exception('mediaunavailable', 'local_seavanmedia');
+    }
     $folder = local_seavanmedia_folders()[$course->idnumber] ?? '';
     return sam_validate_media_file($files[$key], $folder, $key);
 }
@@ -199,6 +204,7 @@ function local_seavanmedia_sync(): array {
     require_once($CFG->dirroot.'/course/lib.php');
     require_once($CFG->dirroot.'/course/modlib.php');
     require_once($CFG->libdir.'/resourcelib.php');
+    require_once($CFG->libdir.'/enrollib.php');
     $lock = \core\lock\lock_config::get_lock_factory('local_seavanmedia')->get_lock('folder-sync',2);
     if (!$lock) { return ['همگام‌سازی دیگری در حال اجراست.']; }
     try {
@@ -210,7 +216,6 @@ function local_seavanmedia_sync(): array {
         foreach ($folders as $idnumber=>$folder) {
             try {
                 $files = local_seavanmedia_files($folder,true);
-                if (!$files) { continue; }
                 $course = $DB->get_record('course',['idnumber'=>$idnumber]);
                 $created = !$course;
                 if (!$course) {
@@ -218,9 +223,9 @@ function local_seavanmedia_sync(): array {
                     $course = create_course((object)['category'=>$targetcat->id,'fullname'=>core_text::substr(basename($folder),0,254),
                         'shortname'=>'SA-'.substr(hash('sha256',$idnumber),0,24),'idnumber'=>$idnumber,
                         'format'=>'topics','summary'=>'','summaryformat'=>FORMAT_HTML,'visible'=>1,'startdate'=>time(),
-                        'enddate'=>0,'numsections'=>0,'enablecompletion'=>0]);
+                        'enddate'=>0,'numsections'=>0,'enablecompletion'=>1]);
                 }
-                $ctx = context_course::instance($course->id);
+                sam_manual_enrolment($course, true);
                 // The policy is applied only at creation. Existing enrolment settings are never overwritten.
                 if ($created) {
                     require_once($CFG->libdir.'/enrollib.php');
@@ -248,6 +253,7 @@ function local_seavanmedia_sync(): array {
                         'externalurl'=>(new moodle_url('/local/seavanmedia/view.php',['id'=>$course->id]))->out(false),
                         'display'=>RESOURCELIB_DISPLAY_OPEN,'groupmode'=>0,'completion'=>0],$course);
                 }
+                sam_sync_sections($course, $files, (int)$module->id);
                 sam_record_revision($course->id,$files);
                 if($created){set_config('lastnewcourse',time(),'local_seavanmedia');}
                 $result[] = ($created?'ایجاد: ':'به‌روز: ').$course->fullname.' — '.count($files).' فایل';

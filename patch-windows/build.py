@@ -7,14 +7,12 @@ import subprocess
 import zipfile
 
 BASE = '136196ebbd75f41a14963296eae285a854fdd7df'
-FILES = (
-    'moodle/local/seavan/index.php',
-    'moodle/local/seavanmedia/evaluationlib.php',
-    'moodle/local/seavanmedia/quizzes.php',
-    'moodle/local/seavanmedia/report.php',
-    'moodle/local/seavanmedia/view.php',
-    'moodle/theme/seavan/layout/workspace.php',
-)
+# Include only the application files changed since the shipped 1.2 build.
+FILES = tuple(subprocess.check_output([
+    'git', 'diff', '--name-only', '--diff-filter=AM', BASE, 'HEAD', '--',
+    'moodle/course/view.php', 'moodle/local/seavan', 'moodle/local/seavanmedia',
+    'moodle/theme/seavan', 'windows-native/academy.ps1',
+], text=True).splitlines())
 FOLDER = 'SeavanAcademy_Patch_1.3'
 parser = argparse.ArgumentParser()
 parser.add_argument('zip', type=Path)

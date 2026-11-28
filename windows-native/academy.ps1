@@ -379,6 +379,18 @@ function Start-Academy {
         Start-OwnedProcess 'web' (Get-Executable 'caddy') @('run', '--config', "$State/Caddyfile", '--adapter', 'caddyfile')
         Wait-LocalPort 'web'
         Test-Web
+        $synced = Join-Path $State 'windows-1.3-library-synced'
+        if (!(Test-Path -LiteralPath $synced)) {
+            Write-Host 'Synchronizing existing course folders with Moodle...'
+            $lines = @(Invoke-MoodlePhp @("$PSScriptRoot/import-courses.php") 'Course import')
+            $lines | Write-Host
+            $errorPrefix = -join ([char[]](1582,1591,1575))
+            if ($lines -match "^$errorPrefix ") {
+                Write-Warning 'One or more folders could not be synchronized. Review the import output and use IMPORT-COURSES.cmd to retry.'
+            } else {
+                Write-LocalText $synced '1'
+            }
+        }
     } catch {
         Stop-Academy
         throw

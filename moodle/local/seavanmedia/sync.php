@@ -26,6 +26,8 @@ if (($_SERVER['REQUEST_METHOD']??'')==='POST') {
 echo $OUTPUT->header();
 echo html_writer::div(html_writer::link(new moodle_url('/local/seavan/index.php',['view'=>'manage']),'مدیریت ← بازگشت'),'sa-admin-back');
 echo html_writer::start_div('seavan-shell');
+echo html_writer::link(new moodle_url('/local/seavanmedia/coursehub.php'), 'دوره‌ها و ثبت‌نام مودل',
+    ['class' => 'btn btn-outline-primary mb-3']);
 echo html_writer::tag('h1','ورود خودکار دوره‌ها',['class'=>'seavan-section']);
 echo html_writer::tag('p','پوشه را روی هارد سرور کپی کنید؛ نام پوشه عنوان دوره و زیرپوشه‌ها فصل‌های آموزش هستند. بررسی خودکار هر ۵ دقیقه انجام می‌شود.',['class'=>'seavan-note']);
 echo $OUTPUT->single_button(new moodle_url('/local/seavanmedia/sync.php',['action'=>'sync','sesskey'=>sesskey()]),'بررسی پوشه‌ها همین حالا','post');

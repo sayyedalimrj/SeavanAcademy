@@ -14,7 +14,7 @@ if ($current -notin @($manifest.base, $manifest.release)) {
 }
 $changed = @()
 foreach ($file in $manifest.files) {
-    if ($file.path -cnotmatch '^moodle/(?:local/seavan(?:media)?/|theme/seavan/)[a-z0-9_/]+\.php$') {
+    if ($file.path -cnotmatch '^moodle/(?:course/view[.]php|(?:local/seavan(?:media)?/|theme/seavan/)[a-z0-9_/]+[.](?:php|css|js))$' -and $file.path -cne 'windows-native/academy.ps1') {
         throw "Unexpected patch path: $($file.path)"
     }
     $source = Join-Path (Join-Path $PSScriptRoot 'payload') $file.path
@@ -44,8 +44,11 @@ if (Test-Path -LiteralPath $state -PathType Container) {
 }
 try {
     $processFile = Join-Path $state 'processes.json'
-    if ((Test-Path -LiteralPath $processFile) -and (Get-Content -LiteralPath $processFile -Raw).Trim() -ne '{}') {
-        throw 'Seavan Academy started again. Stop it before retrying the patch.'
+    if (Test-Path -LiteralPath $processFile) {
+        $running = Get-Content -LiteralPath $processFile -Raw | ConvertFrom-Json
+        if ($running -and @($running.PSObject.Properties | Where-Object { $_.Name -in 'db', 'web', 'php1', 'php2', 'cron' }).Count) {
+            throw 'Seavan Academy started again. Stop it before retrying the patch.'
+        }
     }
     $backup = Join-Path $root ('patch-backups/1.3-' + [DateTime]::Now.ToString('yyyyMMdd-HHmmssfff'))
     [void][IO.Directory]::CreateDirectory($backup)
