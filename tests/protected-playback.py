@@ -48,6 +48,9 @@ with sync_playwright() as p:
     quiz.click()
     assert '/mod/quiz/view.php' in learner.url
     expect(learner.get_by_text('CI Moodle Quiz', exact=True).first).to_be_visible()
+    learner.locator('.quizstartbuttondiv button').click()
+    learner.wait_for_url('**/mod/quiz/attempt.php?**')
+    expect(learner.locator('.que.truefalse')).to_be_visible()
 
     admin = browser.new_page()
     sign_in(admin, 'admin', settings['ADMIN_PASSWORD'])
@@ -57,6 +60,7 @@ with sync_playwright() as p:
     admin.goto(origin + '/report.php?' + urlencode({'course': course}))
     expect(admin.get_by_role('columnheader', name='مدت مشاهده')).to_be_visible()
     expect(admin.get_by_text('CI Learner', exact=True)).to_be_visible()
-    expect(admin.get_by_text('0:00:09', exact=True)).to_be_visible()
+    watched = admin.get_by_role('cell', name='0:00:09', exact=True)
+    expect(watched).to_be_visible()
     browser.close()
 print('PASS: protected playback, blocked direct downloads and cross-session links, native Moodle quiz and learner viewing report.')

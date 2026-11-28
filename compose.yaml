@@ -6,7 +6,7 @@ x-app: &app
     SITE_URL: ${SITE_URL:?Run START.cmd first}
     DB_PASSWORD: ${DB_PASSWORD:?Run START.cmd first}
     SSL_PROXY: ${SSL_PROXY:-0}
-    SEAVAN_PROTECTED_MEDIA: ${SEAVAN_PROTECTED_MEDIA:-0}
+    SEAVAN_PROTECTED_MEDIA: ${SEAVAN_PROTECTED_MEDIA:-1}
   volumes:
     - moodledata:/var/moodledata
     - type: bind

@@ -54,7 +54,7 @@ if (!$course) {
     $rows = $DB->get_records('local_seavanmedia_progress', $conditions, 'timemodified DESC, id DESC', '*', $page * $pagesize, $pagesize);
     $userids = array_unique(array_column($rows, 'userid'));
     $users = $userids ? $DB->get_records_list('user', 'id', $userids, '', 'id,deleted,' .
-        implode(',', \\core_user\\fields::for_name()->get_required_fields())) : [];
+        implode(',', \core_user\fields::for_name()->get_required_fields())) : [];
     foreach ($rows as $row) {
         $user = $users[$row->userid] ?? null;
         $label = ($user && !$user->deleted) ? s(fullname($user)) : 'حساب حذف‌شده';

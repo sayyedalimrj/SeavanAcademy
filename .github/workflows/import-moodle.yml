@@ -184,3 +184,26 @@ jobs:
           docker compose logs --tail=80 init web || true
           docker compose down -v || true
           rm -f .env
+
+  windows-config:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test the Windows installer preflight and private settings
+        shell: powershell
+        run: |
+          & ./start.ps1 -NonInteractive -PrepareOnly
+          if (!(Test-Path .env)) { throw 'Missing installer settings' }
+          $settings = Get-Content .env
+          if ($settings -notcontains 'SITE_URL=http://127.0.0.1:8080' -or $settings -notcontains 'SEAVAN_PROTECTED_MEDIA=1') {
+            throw 'The installer must default to local access and protected media'
+          }
+          $acl = Get-Acl .env
+          if (!$acl.AreAccessRulesProtected) { throw 'The settings file is inheriting access rules' }
+          $hash = (Get-FileHash .env).Hash
+          & ./start.ps1 -NonInteractive -PrepareOnly
+          if ((Get-FileHash .env).Hash -ne $hash) { throw 'The installer modified existing credentials' }
+          foreach ($directory in 'courses','courses2','courses3') {
+            if (!(Test-Path $directory -PathType Container)) { throw 'Missing archive directory' }
+          }

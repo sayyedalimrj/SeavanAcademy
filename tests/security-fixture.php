@@ -19,10 +19,16 @@ if(!$instance){$instance=$DB->get_record('enrol',['id'=>$plugin->add_instance($c
 $role=$DB->get_record('role',['shortname'=>'student'],'*',MUST_EXIST);
 $plugin->enrol_user($instance,$id,$role->id);
 set_config('nodownload_'.$c->id,'1','local_seavanmedia');
-require_once($CFG->libdir.'/testing/generator/data_generator.php');
+require_once($CFG->libdir.'/testing/generator/lib.php');
 $generator = new testing_data_generator();
 if (!$DB->record_exists('quiz', ['course' => $c->id, 'name' => 'CI Moodle Quiz'])) {
-    $generator->create_module('quiz', ['course' => $c->id, 'name' => 'CI Moodle Quiz']);
+    require_once($CFG->dirroot.'/mod/quiz/locallib.php');
+    $quiz = $generator->create_module('quiz', ['course' => $c->id, 'name' => 'CI Moodle Quiz']);
+    $questions = $generator->get_plugin_generator('core_question');
+    $category = $questions->create_question_category(['contextid' => context_course::instance($c->id)->id]);
+    $question = $questions->create_question('truefalse', null, ['category' => $category->id]);
+    quiz_add_quiz_question($question->id, $quiz);
+    \mod_quiz\quiz_settings::create($quiz->id)->get_grade_calculator()->recompute_quiz_sumgrades();
 }
 
 $files=local_seavanmedia_course_files($c);$key=array_key_first($files);
