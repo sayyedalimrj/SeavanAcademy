@@ -59,13 +59,24 @@ with sync_playwright() as p:
 
     admin = browser.new_page()
     sign_in(admin, 'admin', settings['ADMIN_PASSWORD'])
-    assert admin.request.get(stream, headers={'Range': 'bytes=0-15'}).status == 404
-    response = admin.request.get(origin + '/file.php?' + urlencode(identity | {'download': 1}))
-    assert 'video/' not in response.headers.get('content-type', '')
     admin.goto(origin + '/report.php?' + urlencode({'course': course}))
     expect(admin.get_by_role('columnheader', name='مدت مشاهده')).to_be_visible()
     expect(admin.get_by_text('CI Learner', exact=True)).to_be_visible()
     watched = admin.get_by_role('cell', name='0:00:09', exact=True)
     expect(watched).to_be_visible()
+    print('PASS: viewing report shows the enrolled learner and the measured session duration.', flush=True)
+
+    admin.goto(origin + '/view.php?' + urlencode(identity | {'native': 1}))
+    private_url = admin.locator('#sam-player source').get_attribute('src')
+    assert private_url != stream, 'Moodle reused the learner playback ticket for the administrator'
+    probe = {'Range': 'bytes=0-15'}
+    own_stream = admin.request.get(private_url, headers=probe)
+    assert own_stream.status == 206, ('An administrator with their own playback link could not stream', own_stream.status)
+    borrowed = admin.request.get(stream, headers=probe, max_redirects=0)
+    assert borrowed.body() != own_stream.body() and not borrowed.headers.get('content-type', '').startswith('video/'), (
+        'Another session received a media response', borrowed.status
+    )
+    response = admin.request.get(origin + '/file.php?' + urlencode(identity | {'download': 1}), max_redirects=0)
+    assert 'video/' not in response.headers.get('content-type', '')
     browser.close()
 print('PASS: protected playback, blocked direct downloads and cross-session links, native Moodle quiz and learner viewing report.')
