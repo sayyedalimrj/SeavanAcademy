@@ -26,7 +26,22 @@ if (!$DB->record_exists('quiz', ['course' => $c->id, 'name' => 'CI Moodle Quiz']
     $quiz = $generator->create_module('quiz', ['course' => $c->id, 'name' => 'CI Moodle Quiz']);
     $questions = $generator->get_plugin_generator('core_question');
     $category = $questions->create_question_category(['contextid' => context_course::instance($c->id)->id]);
-    $question = $questions->create_question('truefalse', null, ['category' => $category->id]);
+    $emptyfeedback = ['text' => '', 'format' => FORMAT_HTML];
+    $question = question_bank::get_qtype('truefalse')->save_question(
+        (object)['qtype' => 'truefalse'],
+        (object)[
+            'category' => (string)$category->id,
+            'name' => 'CI protected playback quiz question',
+            'questiontext' => ['text' => 'This is a real Moodle quiz.', 'format' => FORMAT_HTML],
+            'defaultmark' => 1,
+            'penalty' => 1,
+            'correctanswer' => 1,
+            'status' => \core_question\local\bank\question_version_status::QUESTION_STATUS_READY,
+            'generalfeedback' => $emptyfeedback,
+            'feedbacktrue' => $emptyfeedback,
+            'feedbackfalse' => $emptyfeedback,
+        ]
+    );
     quiz_add_quiz_question($question->id, $quiz);
     \mod_quiz\quiz_settings::create($quiz->id)->get_grade_calculator()->recompute_quiz_sumgrades();
 }

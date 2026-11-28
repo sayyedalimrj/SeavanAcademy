@@ -132,7 +132,10 @@ jobs:
       - name: Test learner access and concurrent media requests
         if: ${{ !cancelled() && steps.site_ready.outcome == 'success' }}
         run: |
-          docker compose exec -T -u www-data web php < tests/security-fixture.php > /tmp/security-fixture.json
+          if ! docker compose exec -T -u www-data web php < tests/security-fixture.php > /tmp/security-fixture.json; then
+            cat /tmp/security-fixture.json >&2
+            exit 1
+          fi
           python3 tests/security-load.py /tmp/security-fixture.json
           python3 tests/download-smoke.py /tmp/security-fixture.json
       - name: Restore a real backup in the test stack
